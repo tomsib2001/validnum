@@ -268,11 +268,11 @@ move => hra hrb hleab.
 have := contains_le (I.convert_bound a) (I.convert_bound b) (I.convert_bound (I.midpoint (I.bnd a b))) => h1.
 have h2 : exists x : ExtendedR, contains (I.convert (I.bnd a b)) x.
   by exists (I.convert_bound a); apply: int_not_empty => //.  
-have h3: contains (Interval_interval.Ibnd (I.convert_bound a) (I.convert_bound b))
-         (I.convert_bound (I.midpoint (I.bnd a b))).
-rewrite  -I.bnd_correct.  admit.
 have := (I.midpoint_correct (I.bnd a b) h2) => h4.
 elim : h4 => h5 h6.
+have h3: contains (Interval_interval.Ibnd (I.convert_bound a) (I.convert_bound b))
+         (I.convert_bound (I.midpoint (I.bnd a b))).
+rewrite  -I.bnd_correct; exact: h6.  
 have h7 := (h1 h6) .
 elim: h7 => h8 h9.
 split.
@@ -283,14 +283,14 @@ split.
 Qed.
 
 
-Lemma convboundisxReal (a b : F.type) :  (F.real a) -> (F.real b) -> I.convert_bound (I.midpoint (I.bnd a b)) = Xreal (T.toR (I.midpoint (I.bnd a b))).
-intros ha hb.
-have := (I.midpoint_correct (I.bnd a b)) => h.
-have hnempty: exists x, contains (I.convert (I.bnd a b)) (x).
-admit.
-elim : (h hnempty) => h1 h2.
-apply: h1.
-Qed.
+(* Lemma convboundisxReal (a b : F.type) :  (F.real a) -> (F.real b) -> I.convert_bound (I.midpoint (I.bnd a b)) = Xreal (T.toR (I.midpoint (I.bnd a b))). *)
+(* intros ha hb. *)
+(* have := (I.midpoint_correct (I.bnd a b)) => h. *)
+(* have hnempty: exists x, contains (I.convert (I.bnd a b)) (x). *)
+(* admit. *)
+(* elim : (h hnempty) => h1 h2. *)
+(* apply: h1. *)
+(* Qed. *)
 
 
 (* Hypothesis ha : I.convert_bound a = Xreal (T.toR a). *)
@@ -306,10 +306,8 @@ Lemma integral_correct (depth : nat) (a b : F.type) :
            (Xreal (RInt f (T.toR a) (T.toR b))).
 Proof.
 elim: depth a b => [ | k Hk]; move => a b Hintegrable Hleab ha hb.
-(* case: (Rle_lt_or_eq_dec _ _ Hleab) => [Hleab1 | Hleab]. *)
-  admit. (* rewrite /integral. case/F_realP: ha => ra hra; case/F_realP: hb => rb hrb; apply: integral_order_one_correct => // . *)
-  rewrite /T.toR -![(FtoX (F.toF _))]/(I.convert_bound _).
-
+  by apply: integral_order_one_correct => //.
+rewrite /T.toR -![(FtoX (F.toF _))]/(I.convert_bound _).
 rewrite /integral -/integral.
 set midpoint := I.midpoint (I.bnd a b).
 have hIl : ex_RInt f (T.toR a) (T.toR midpoint).
@@ -333,17 +331,6 @@ have hm : I.convert_bound midpoint = Xreal (T.toR midpoint).
     elim : habs. by exists (T.toR midpoint).
     by rewrite -[Xreal (_ + _)]/(Xadd (Xreal I1) (Xreal I2)); apply: I.add_correct; apply: Hk => // ;have := midpoint_in_int a b ha hb Hleab => hineqs; elim: hineqs => in1 in2.
 Qed.
- 
-About I.midpoint_correct.
-Search _ (Xreal (proj_val _)).
-
-Search _ I.midpoint.
-
-
-(* rewrite /I.convert_bound /midpoint /I.midpoint. *)
-
-(* have -> : I.bnd a b = Ibnd a b by rewrite /I.bnd. *)
-(* Search _ F.cmp. *)
 
 End integral.
 
