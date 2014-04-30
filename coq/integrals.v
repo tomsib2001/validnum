@@ -94,13 +94,10 @@ Qed.
 Require Import ssrfun ssrbool.
 
 Lemma F_realP (x : F.type) : 
-  reflect (exists r, I.convert_bound x = Xreal r) (F.real x).
+  reflect (I.convert_bound x = Xreal (T.toR x)) (F.real x).
 Proof.
-have := (F.real_correct x); rewrite /I.convert_bound. 
-case: (F.toF x)=> [||y z t] -> /=; constructor. 
-- by case.
-- by exists 0.
-- by exists (FtoR F.radix y z t).
+have := (F.real_correct x); rewrite /I.convert_bound /T.toR.
+by case: (F.toF x)=> [||y z t] ->; constructor. 
 Qed.
 
 (* Lemma thin_consistent (a b : F.type) : F.real a = true -> F.real b = true -> *)
@@ -138,16 +135,16 @@ Proof.
 rewrite /le_lower => /= . apply: Rle_refl.
 Qed.
 
-Lemma int_not_empty (a b : F.type) :  (F.real a) -> (F.real b) -> (T.toR a) <= (T.toR b) -> contains (I.convert (I.bnd a b)) (I.convert_bound a). 
+Lemma int_not_empty (a b : F.type) :  (F.real a) -> (F.real b) -> 
+  (T.toR a) <= (T.toR b) -> contains (I.convert (I.bnd a b)) (I.convert_bound a).
 Proof.
 intros ha hb hleab.
-case/F_realP : ha => ra hra. rewrite hra.
+case/F_realP : ha => hra. rewrite hra.
 apply: le_contains.
   by rewrite hra; apply: le_lower_refl.
-case/F_realP: hb => rb hrb. rewrite hrb /=.
-move: hleab.
 rewrite /T.toR. 
-by rewrite -![(FtoX (F.toF _))]/(I.convert_bound _) hra hrb.
+case/F_realP: hb=> -> /=. 
+by rewrite -![(FtoX (F.toF _))]/(I.convert_bound _). 
 Qed.
 
 
@@ -192,9 +189,8 @@ Hypothesis hb : F.real b.
 
 
 Lemma toR_is_conv_bound (b0 : F.type) : (F.real b0) -> Xreal (T.toR b0) = I.convert_bound b0.
-move => hb0.
-case/F_realP: hb0 => rb1 hrb1. 
-    by rewrite hrb1  /T.toR  -[(FtoX (F.toF _))]/(I.convert_bound _) hrb1.
+move => hb0; rewrite /T.toR -[(FtoX (F.toF _))]/(I.convert_bound _).
+by case/F_realP: hb0 => ->. 
 Qed.
 
 Lemma thin_correct_toR (b0 : F.type) : (F.real b0) -> contains (I.convert (thin b0)) (Xreal (T.toR b0)).
@@ -217,8 +213,8 @@ case: (Rle_lt_or_eq_dec _ _ Hleab) => [Hleab1 | Heqab].
     apply: I.mul_correct.
     - apply: XRInt1_correct => // x hx. rewrite -elu -[Xreal (f x)]/(g (Xreal x)).
       have iFab := HiFIntExt (I.bnd a b) (Xreal x).
-      by apply: iFab; rewrite /=; case/F_realP: ha => ra1 hra; 
-         case/F_realP: hb => rb1 hrb; rewrite hra hrb; move: hx; 
+      by apply: iFab; rewrite /=; case/F_realP: ha => hra; 
+         case/F_realP: hb => hrb; rewrite hra hrb; move: hx; 
          rewrite /ra /rb /T.toR -![(FtoX (F.toF _))]/(I.convert_bound _) hra hrb.
     - rewrite -[Xreal (rb - ra)]/(Xsub (Xreal rb) (Xreal ra)). (* 1 *)
       apply: I.sub_correct.
@@ -274,9 +270,9 @@ rewrite  -I.bnd_correct; exact: h6.
 have h7 := (h1 h6) .
 elim: h7 => h8 h9.
 split.
-  - move : h8; case /F_realP: hra => ra hra;
+  - move : h8; case /F_realP: hra => hra;
     by rewrite /le_lower /le_upper h5 hra /Xneg /T.toR -![(FtoX (F.toF _))]/(I.convert_bound _) hra; exact: Ropp_le_cancel.
-  - move: h9; case /F_realP: hrb => rb hrb;
+  - move: h9; case /F_realP: hrb => hrb;
     by rewrite  /le_upper h5 hrb /Xneg /T.toR -![(FtoX (F.toF _))]/(I.convert_bound _) hrb. 
 Qed.
 
@@ -323,11 +319,10 @@ have hm : I.convert_bound midpoint = Xreal (T.toR midpoint).
   suff /I.midpoint_correct []: 
     exists x : ExtendedR, contains (I.convert (I.bnd a b)) x by [].
   by exists (I.convert_bound a); apply: int_not_empty => //; apply/F_realP.
-  have hrmidpoint : F.real midpoint.
-  case -> : F_realP => // habs .
-    rewrite hm in habs.
-    elim : habs. by exists (T.toR midpoint).
-    by rewrite -[Xreal (_ + _)]/(Xadd (Xreal I1) (Xreal I2)); apply: I.add_correct; apply: Hk => // ;have := midpoint_in_int a b ha hb Hleab => hineqs; elim: hineqs => in1 in2.
+  have hrmidpoint : F.real midpoint by case: F_realP.
+  rewrite -[Xreal (_ + _)]/(Xadd (Xreal I1) (Xreal I2)). 
+  have [in1 in2] := midpoint_in_int a b ha hb Hleab.
+  by apply: I.add_correct; apply: Hk. 
 Qed.
 
 End integral.
