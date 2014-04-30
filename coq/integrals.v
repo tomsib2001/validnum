@@ -103,8 +103,6 @@ case: (F.toF x)=> [||y z t] -> /=; constructor.
 - by exists (FtoR F.radix y z t).
 Qed.
 
-SearchAbout Xcmp.
-
 (* Lemma thin_consistent (a b : F.type) : F.real a = true -> F.real b = true -> *)
 (*    T.toR a = T.toR b -> thin a = thin b. *)
 (* Proof. *)
@@ -338,6 +336,22 @@ End IntervalIntegral.
 
 End IntegralTactic.
 
-(* Module Test := IntegralTactic  *)
+Require Import Interval_generic_ops.
+Require Import Interval_transcend.
 
-(* End Test. *)
+Module F :=  (GenericFloat Radix2).
+Module Test := IntegralTactic F.
+Import Test.
+Check integral.
+(* Print Int.I.type. *)
+(* Print F.type. *)
+(* Print F.radix. *)
+(* Search "ext". *)
+Module T := TranscendentalFloatFast F.
+(* About T.cos_fast0. *)
+(* About T.cos_fast. *)
+(* Print  T. *)
+(* SearchAbout ((f_interval _) -> (f_interval _)). *)
+Definition prec := (10%positive) : F.precision.
+Goal integral (prec) (Int.exp prec) 3 F.zero (F.fromZ 1) = integral (prec) (Int.exp prec) 3 F.zero (F.fromZ 1).
+compute.
