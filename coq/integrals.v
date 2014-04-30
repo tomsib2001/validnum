@@ -348,5 +348,11 @@ Module T := TranscendentalFloatFast F.
 (* Print  T. *)
 (* SearchAbout ((f_interval _) -> (f_interval _)). *)
 Definition prec := (10%positive) : F.precision.
-Goal integral (prec) (Int.exp prec) 3 F.zero (F.fromZ 1) = integral (prec) (Int.exp prec) 3 F.zero (F.fromZ 1).
-compute.
+
+Time Eval vm_compute in integral (prec) (Int.exp prec) 3 F.zero (F.fromZ 1).
+(* Ibnd (Float F.radix false 824 (-9)) (Float F.radix false 938 (-9)) *)
+(* Finished transaction in 0. secs (0.064004u,0.s) *)
+
+Time Eval vm_compute in integral (prec) (Int.exp prec) 6 F.zero (F.fromZ 1).
+(*  Ibnd (Float F.radix false 870 (-9)) (Float F.radix false 890 (-9)) *)
+(* Finished transaction in 1. secs (0.552034u,0.s) *)
