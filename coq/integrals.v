@@ -327,10 +327,13 @@ have hm : I.convert_bound midpoint = Xreal (T.toR midpoint).
   suff /I.midpoint_correct []: 
     exists x : ExtendedR, contains (I.convert (I.bnd a b)) x by [].
   by exists (I.convert_bound a); apply: int_not_empty => //; apply/F_realP.
-  (* - by exists (T.toR a). *)
-  (* - by exists (T.toR b). *)
-rewrite -[Xreal (_ + _)]/(Xadd (Xreal I1) (Xreal I2)); apply: I.add_correct; apply: Hk => //.
-
+  have hrmidpoint : F.real midpoint.
+  case -> : F_realP => // habs .
+    rewrite hm in habs.
+    elim : habs. by exists (T.toR midpoint).
+    by rewrite -[Xreal (_ + _)]/(Xadd (Xreal I1) (Xreal I2)); apply: I.add_correct; apply: Hk => // ;have := midpoint_in_int a b ha hb Hleab => hineqs; elim: hineqs => in1 in2.
+Qed.
+ 
 About I.midpoint_correct.
 Search _ (Xreal (proj_val _)).
 
