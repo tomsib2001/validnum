@@ -105,36 +105,16 @@ Qed.
 
 SearchAbout Xcmp.
 
-Lemma thin_consistent (a b : F.type) : F.real a = true -> F.real b = true ->
-   T.toR a = T.toR b -> thin a = thin b.
-Proof.
-rewrite /thin => ha hb; rewrite ha hb.  
-case/F_realP:ha => ra hra; case/F_realP: hb => rb hrb.
-rewrite /T.toR /= -/(I.convert_bound a) -/(I.convert_bound b) hra hrb /=.
-rewrite /I.bnd.
-Search _ I.bnd.
-Admitted.
+(* Lemma thin_consistent (a b : F.type) : F.real a = true -> F.real b = true -> *)
+(*    T.toR a = T.toR b -> thin a = thin b. *)
+(* Proof. *)
+(* rewrite /thin => ha hb; rewrite ha hb.   *)
+(* case/F_realP:ha => ra hra; case/F_realP: hb => rb hrb. *)
+(* rewrite /T.toR /= -/(I.convert_bound a) -/(I.convert_bound b) hra hrb /=. *)
+(* rewrite /I.bnd. *)
+(* Search _ I.bnd. *)
+(* Admitted. *)
 
-(* Lemma thin_consistent (a b : F.type): T.toR a = T.toR b -> thin a = thin b. *)
-(* rewrite /thin. *)
-(* move => Hab. *)
-(* suffices: I.convert (thin a) = I.convert (thin b). *)
-(* intros Hconvert. *)
-(* case Ha : (thin a). case Hb : (thin b) => [|l u]//=. *)
-(* rewrite /thin in Hb. *)
-(*  case realb : (F.real b). *)
-(* rewrite realb in Hb. *)
-(* have *)
-(* unfold thin, T.toR, proj_val,FtoX. *)
-(* move => Hab. *)
-(* case Ha : (F.toF a) => //= ; case Hb : (F.toF b) => //=; rewrite /I.bnd; rewrite Ha Hb in Hab. *)
-
-(* Print I.convert. *)
-(* About bnd_correct. *)
-
-(* have -> : a = convert_bound a.  *)
-(* Eval compute in (F.real F.nan). *)
-(* SearchAbout Ibnd. *)
 Notation xreal_extension := Interval_xreal.extension.
 
 Section IntervalIntegral.
@@ -154,6 +134,25 @@ Hypothesis Hfgext : xreal_extension f g.
 (* iF is an interval extension of g *)
 Hypothesis HiFIntExt : I.extension g iF.
 
+(* patch for Guillaume *)
+Lemma le_lower_refl (ra : R) : le_lower (Xreal ra) (Xreal ra).
+Proof.
+rewrite /le_lower => /= . apply: Rle_refl.
+Qed.
+
+Lemma int_not_empty (a b : F.type) :  (F.real a) -> (F.real b) -> (T.toR a) <= (T.toR b) -> contains (I.convert (I.bnd a b)) (I.convert_bound a). 
+Proof.
+intros ha hb hleab.
+case/F_realP : ha => ra hra. rewrite hra.
+apply: le_contains.
+  by rewrite hra; apply: le_lower_refl.
+case/F_realP: hb => rb hrb. rewrite hrb /=.
+move: hleab.
+rewrite /T.toR. 
+by rewrite -![(FtoX (F.toF _))]/(I.convert_bound _) hra hrb.
+Qed.
+
+
 Section OrderOne.
 
 Variables (a b : F.type).
@@ -167,10 +166,10 @@ Hypothesis  Hleab : T.toR a <= T.toR b.
 
 
 (* The conversion of a and b to ExtendedR avoids Nan *)
-(* Hypothesis ha : F.real a. *)
-(* Hypothesis hb : F.real b. *)
-Hypothesis ha : I.convert_bound a = Xreal (T.toR a).
-Hypothesis hb : I.convert_bound b = Xreal (T.toR b).
+Hypothesis ha : F.real a.
+Hypothesis hb : F.real b.
+(* Hypothesis ha : I.convert_bound a = Xreal (T.toR a). *)
+(* Hypothesis hb : I.convert_bound b = Xreal (T.toR b). *)
 
 
 
@@ -193,10 +192,17 @@ Hypothesis hb : I.convert_bound b = Xreal (T.toR b).
   explicit, or providing explicitely the arguments, which come after prec and
   interval arguments:  apply: (I.sub_correct _ _ _ (Xreal rb) (Xreal ra)) *)
 
-Lemma why_isnt_this_already_proved (a0 b0 : F.type) : T.toR a0 = T.toR b0 -> a0 = b0.
-SearchAbout T.toR.
-SearchAbout T.le_prop.
-Admitted. (* because it's not true *)
+
+Lemma toR_is_conv_bound (b0 : F.type) : (F.real b0) -> Xreal (T.toR b0) = I.convert_bound b0.
+move => hb0.
+case/F_realP: hb0 => rb1 hrb1. 
+    by rewrite hrb1  /T.toR  -[(FtoX (F.toF _))]/(I.convert_bound _) hrb1.
+Qed.
+
+Lemma thin_correct_toR (b0 : F.type) : (F.real b0) -> contains (I.convert (thin b0)) (Xreal (T.toR b0)).
+Proof.
+by move => hb0; rewrite toR_is_conv_bound //; exact: thin_correct.
+Qed.    
 
 Lemma integral_order_one_correct :
   contains
@@ -213,17 +219,24 @@ case: (Rle_lt_or_eq_dec _ _ Hleab) => [Hleab1 | Heqab].
     apply: I.mul_correct.
     - apply: XRInt1_correct => // x hx. rewrite -elu -[Xreal (f x)]/(g (Xreal x)).
       have iFab := HiFIntExt (I.bnd a b) (Xreal x).
-      by apply: iFab; rewrite /= ha hb.
+      by apply: iFab; rewrite /=; case/F_realP: ha => ra1 hra; 
+         case/F_realP: hb => rb1 hrb; rewrite hra hrb; move: hx; 
+         rewrite /ra /rb /T.toR -![(FtoX (F.toF _))]/(I.convert_bound _) hra hrb.
     - rewrite -[Xreal (rb - ra)]/(Xsub (Xreal rb) (Xreal ra)). (* 1 *)
-      apply: I.sub_correct; rewrite -?hb -?ha; exact: thin_correct.
-  + rewrite (why_isnt_this_already_proved a b Heqab).
+      apply: I.sub_correct.
+        exact: thin_correct_toR.
+      (*   have -> : Xreal rb = I.convert_bound b. case/F_realP: hb => rb1 hrb1.  *)
+      (*     by rewrite hrb1 /rb /T.toR  -[(FtoX (F.toF _))]/(I.convert_bound _) hrb1. *)
+      (* exact: thin_correct. *)
+      exact: thin_correct_toR.
+  (* + rewrite (why_isnt_this_already_proved a b Heqab). *)
     have -> : Iab = 0; first by unfold Iab; rewrite Heqab RInt_point // .
     have ->: Xreal 0 =Xmul(g (Xreal (T.toR a))) (Xreal 0).
     rewrite /= Rmult_0_r // .
     apply: I.mul_correct. 
-      -  rewrite -elu; apply: HiFIntExt. admit.    
+      -  by rewrite -elu; apply: HiFIntExt; rewrite toR_is_conv_bound //;  apply: int_not_empty.     
          have <- :  Xsub (Xreal rb) (Xreal rb) = Xreal 0 by congr Xreal; ring.
-      -  by apply: I.sub_correct; rewrite <- hb; apply: thin_correct.
+      -  by apply: I.sub_correct; try (exact: thin_correct_toR); try (rewrite -?Heqab; exact: thin_correct_toR).
 Qed.
 
 End OrderOne.
@@ -248,32 +261,26 @@ Section integral.
 
 (* Hypothesis  Hltab : T.toR a < T.toR b. *)
 
-(* patch for Guillaume *)
-Lemma le_lower_refl (ra : R) : le_lower (Xreal ra) (Xreal ra).
-Proof.
-rewrite /le_lower => /= . apply: Rle_refl.
-Qed.
 
-Lemma int_not_empty (a b : F.type) :  (F.real a) -> (F.real b) -> (T.toR a) <= (T.toR b) -> contains (I.convert (I.bnd a b)) (I.convert_bound a). 
+Lemma midpoint_in_int (a b : F.type) : (F.real a) -> (F.real b) -> (T.toR a) <= (T.toR b)-> T.toR a <= T.toR (I.midpoint (I.bnd a b)) <= T.toR b.
 Proof.
-intros ha hb hleab.
-case/F_realP : ha => ra hra. rewrite hra.
-apply: le_contains.
-  by rewrite hra; apply: le_lower_refl.
-case/F_realP: hb => rb hrb. rewrite hrb /=.
-move: hleab.
-rewrite /T.toR. 
-by rewrite -![(FtoX (F.toF _))]/(I.convert_bound _) hra hrb.
-Qed.
-
-
-Lemma midpoint_in_int (a b : F.type) : (F.real a) -> (F.real b) -> T.toR a <= T.toR (I.midpoint (I.bnd a b)) <= T.toR b.
-Proof.
-move => hra hrb.
+move => hra hrb hleab.
 have := contains_le (I.convert_bound a) (I.convert_bound b) (I.convert_bound (I.midpoint (I.bnd a b))) => h1.
-have := int_not_empty a b hra hrb.
-Admitted.
-
+have h2 : exists x : ExtendedR, contains (I.convert (I.bnd a b)) x.
+  by exists (I.convert_bound a); apply: int_not_empty => //.  
+have h3: contains (Interval_interval.Ibnd (I.convert_bound a) (I.convert_bound b))
+         (I.convert_bound (I.midpoint (I.bnd a b))).
+rewrite  -I.bnd_correct.  admit.
+have := (I.midpoint_correct (I.bnd a b) h2) => h4.
+elim : h4 => h5 h6.
+have h7 := (h1 h6) .
+elim: h7 => h8 h9.
+split.
+  - move : h8; case /F_realP: hra => ra hra;
+    by rewrite /le_lower /le_upper h5 hra /Xneg /T.toR -![(FtoX (F.toF _))]/(I.convert_bound _) hra; exact: Ropp_le_cancel.
+  - move: h9; case /F_realP: hrb => rb hrb;
+    by rewrite  /le_upper h5 hrb /Xneg /T.toR -![(FtoX (F.toF _))]/(I.convert_bound _) hrb. 
+Qed.
 
 
 Lemma convboundisxReal (a b : F.type) :  (F.real a) -> (F.real b) -> I.convert_bound (I.midpoint (I.bnd a b)) = Xreal (T.toR (I.midpoint (I.bnd a b))).
