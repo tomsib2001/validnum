@@ -246,6 +246,23 @@ Fixpoint integral (depth : nat) (a b : F.type) :=
   end
 .
 
+
+Check (round radix2 rnd_DN).
+SearchAbout rounding_mode.
+SearchAbout F.precision positive.
+Definition round_down := round radix2 rnd_DN (F.prec prec).
+Definition round_up := round radix2 rnd_UP (F.prec prec).
+
+Require Import Fcore_generic_fmt.
+SearchAbout generic_format F2R.
+SearchAbout float ExtendedR.
+SearchAbout round.
+  
+(* I.bnd *)
+
+(* Fixpoint integral_real (depth : nat) (a b : R) := *)
+  
+
 Section integral.
 
 (* Variables (a b : F.type). *)
@@ -329,12 +346,49 @@ End integral.
 
 End IntervalIntegral.
 
+Print integral.
+
+SearchAbout (contains _ _).
+
+Require Import Interval_tactic.
+
+
+Ltac toto :=
+match goal with
+| |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
+  let v := Private.get_float a in
+  let w := Private.get_float c in
+ change (contains (I.convert (I.bnd v w)) (Xreal (RInt f ra rb)))
+| _ => fail 100 "just checking" end.
+
+
+Definition f (x : R) := x.
+Definition g (x : I.type) := x.
+
+Goal forall (prec : F.precision), (0 <= RInt f 0 1 <= 1)%R.
+move => prec.
+Private.xalgorithm_pre.
+apply: (subset_contains (I.convert(integral (prec) g 5 (F.fromZ 0) (F.fromZ 1)))); last first.
+have -> : RInt f 0 1 = RInt f (T.toR (F.fromZ 0)) (T.toR (F.fromZ 1)) by admit.
+apply: integral_correct => //= .
+ - admit.
+ - admit.
+ - admit.
+ - admit.
+ - admit.
+Admitted.
+   
+
 End IntegralTactic.
 
 Require Import Interval_generic_ops.
 Require Import Interval_transcend.
 
 Module F :=  (GenericFloat Radix2).
+Module Int := FloatIntervalFull F.
+
+Import Int.
+
 Module Test := IntegralTactic F.
 Import Test.
 Check integral.
@@ -347,12 +401,68 @@ Module T := TranscendentalFloatFast F.
 (* About T.cos_fast. *)
 (* Print  T. *)
 (* SearchAbout ((f_interval _) -> (f_interval _)). *)
-Definition prec := (10%positive) : F.precision.
+Definition prec10 := (10%positive) : F.precision.
 
-Time Eval vm_compute in integral (prec) (Int.exp prec) 3 F.zero (F.fromZ 1).
+
+Definition f (x : R) := x.
+Definition g (x : I.type) := x.
+
+Require Import Interval_tactic.
+
+SearchAbout ex_RInt.
+
+Lemma encadrement :  (0 <= RInt f 0 1 <= 1)%R.
+Proof.
+Private.xalgorithm_pre.
+apply: (subset_contains (I.convert(integral (prec10) g 1 (F.fromZ 0) (F.fromZ 1)))); last first.
+have -> : RInt f 0 1 = RInt f (T.toR (F.fromZ 0)) (T.toR (F.fromZ 1)) by admit.
+Check (integral_correct prec10 f g).
+have toto : Int.I.extension
+         (fun x : ExtendedR =>
+          match x with
+          | Xnan => Xnan
+          | Xreal r => Xreal (f r)
+          end) g by admit.
+apply: (integral_correct prec10 f g toto 1 (F.fromZ 0) (F.fromZ 1)).
+ - admit.
+ - admit.
+ - admit.
+ - admit.
+simpl. rewrite /le_lower //=. split. 
+Admitted.
+
+
+
+
+
+
+Time Eval vm_compute in integral (prec10) (Int.exp prec10) 3 F.zero (F.fromZ 1).
 (* Ibnd (Float F.radix false 824 (-9)) (Float F.radix false 938 (-9)) *)
 (* Finished transaction in 0. secs (0.064004u,0.s) *)
 
-Time Eval vm_compute in integral (prec) (Int.exp prec) 6 F.zero (F.fromZ 1).
+Time Eval vm_compute in integral (prec10) (Int.exp prec10) 6 F.zero (F.fromZ 1).
 (*  Ibnd (Float F.radix false 870 (-9)) (Float F.radix false 890 (-9)) *)
 (* Finished transaction in 1. secs (0.552034u,0.s) *)
+
+Time Eval vm_compute in integral (prec10) (Int.exp prec10) 10 F.zero (F.fromZ 1).
+(* (Float F.radix false 875 (-9)) (Float F.radix false 885 (-9))*)
+(* Finished transaction in 8. secs (8.400525u,0.004s)*)
+
+Definition prec30 := (30%positive) : F.precision.
+
+Time Eval vm_compute in integral (prec30) (Int.exp prec10) 3 F.zero (F.fromZ 1).
+(*     = Ibnd (Float F.radix false 13207 (-13))
+         (Float F.radix false 14985 (-13))
+     : f_interval F.type
+Finished transaction in 0. secs (0.064004u,0.s)*)
+
+Time Eval vm_compute in integral (prec30) (Int.exp prec10) 6 F.zero (F.fromZ 1).
+(*      = Ibnd (Float F.radix false 111663 (-16)) *)
+(*          (Float F.radix false 113561 (-16)) *)
+(*      : f_interval F.type *)
+(* Finished transaction in 0. secs (0.532033u,0.s) *)
+
+
+Time Eval vm_compute in integral (prec30) (Int.exp prec10) 10 F.zero (F.fromZ 1).
+(* (Float F.radix false 875 (-9)) (Float F.radix false 885 (-9))*)
+(* Finished transaction in 8. secs (8.400525u,0.004s)*)
