@@ -15,63 +15,10 @@ Require Import Interval_bisect.
 
 Require Import Coquelicot.
 
-Require Import ssreflect.
+Require Import extra_coquelicot.
+Require Import extra_interval.
 
-Section ExtensionOfLoadedLibraries.
-
-Section Integral.
-
-Variable (V : CompleteNormedModule R_AbsRing).
-Variables (f : R -> R) (ra rb : R).
-
-Hypothesis ltab : ra < rb.
-
-Hypothesis fint : ex_RInt f ra rb.
-
-(* Below : a couple of helper lemmas about maj/min of integrals *)
-Lemma RInt_le_r (u : R) : (forall x : R, ra <= x <= rb -> f x <= u) ->
-                          RInt f ra rb / (rb - ra) <= u.
-Proof.
-move=> hfu; apply/Rle_div_l;first by apply: Rgt_minus.
-have -> : u * (rb - ra) = RInt (fun _ => u) ra rb.
-  by rewrite RInt_const Rmult_comm.
-apply: RInt_le => //; first exact: Rlt_le.
-exact: ex_RInt_const.
-Qed.
-
-Lemma RInt_le_l (l : R) : (forall x : R, ra <= x <= rb -> l <= f x) ->
-                  l <= RInt f ra rb / (rb - ra).
-Proof.
-move=> hfl; apply/Rle_div_r; first by apply: Rgt_minus.
-have -> : l * (rb - ra) = RInt (fun _ => l) ra rb.
-  by rewrite RInt_const Rmult_comm.
-apply: RInt_le => //; first exact: Rlt_le.
-exact: ex_RInt_const.
-Qed.
-
-Lemma ex_RInt_Chasles_sub (g : R -> V) (a b c d : R) :
- a <= b -> b <= c -> c <= d -> ex_RInt g a d -> ex_RInt g b c.
-Proof.
-move=> leab lebc lecd hiad; apply: (ex_RInt_Chasles_1 _ _ _ d) => //. 
-by apply: (ex_RInt_Chasles_2 _ a) => //; split=> //; apply: (Rle_trans _ c).
-Qed.
-
-Lemma XRInt1_correct (i : interval) : 
-  (forall x, ra <= x <= rb -> contains i (Xreal (f x))) ->
-  contains i (Xreal ((RInt f ra rb) / (rb - ra))).
-Proof.
-move=> hif.
-have sbapos : rb - ra > 0 by apply: Rgt_minus.
-case: i hif => [|[|?] [|?]] //= hif; split => //.
-- by apply: RInt_le_r => // x /hif [].
-- by apply: RInt_le_l => // x /hif [].
-- by apply: RInt_le_l => // x /hif [].
-- by apply: RInt_le_r => // x /hif [].
-Qed.
-
-End Integral.
-
-End ExtensionOfLoadedLibraries.
+Require Import ssreflect ssrfun ssrbool.
 
 Module IntegralTactic (F : FloatOps with Definition even_radix := true).
 
@@ -84,31 +31,19 @@ Definition thin (x : F.type) : Int.type := if F.real x then I.bnd x x else I.nai
 
 (* (I.convert_bound x) is (FtoX (F.toF x)) *)
 Lemma thin_correct (x : F.type) : 
-  contains (I.convert (thin x)) (I.convert_bound x).
+ contains (I.convert (thin x)) (I.convert_bound x).
 Proof.
 rewrite /thin I.real_correct.
 case ex: (I.convert_bound x) => [|r] //=.
 rewrite ex; split; exact: Rle_refl.
 Qed.
 
-Require Import ssrfun ssrbool.
-
 Lemma F_realP (x : F.type) : 
-  reflect (I.convert_bound x = Xreal (T.toR x)) (F.real x).
+ reflect (I.convert_bound x = Xreal (T.toR x)) (F.real x).
 Proof.
 have := (F.real_correct x); rewrite /I.convert_bound /T.toR.
 by case: (F.toF x)=> [||y z t] ->; constructor. 
 Qed.
-
-(* Lemma thin_consistent (a b : F.type) : F.real a = true -> F.real b = true -> *)
-(*    T.toR a = T.toR b -> thin a = thin b. *)
-(* Proof. *)
-(* rewrite /thin => ha hb; rewrite ha hb.   *)
-(* case/F_realP:ha => ra hra; case/F_realP: hb => rb hrb. *)
-(* rewrite /T.toR /= -/(I.convert_bound a) -/(I.convert_bound b) hra hrb /=. *)
-(* rewrite /I.bnd. *)
-(* Search _ I.bnd. *)
-(* Admitted. *)
 
 Notation xreal_extension := Interval_xreal.extension.
 
