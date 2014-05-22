@@ -29,3 +29,17 @@ case: i hif => [|[|?] [|?]] //= hif; split => //.
 Qed.
 
 End Integral.
+
+Section ExtensionOfFunctionsToXreal.
+
+Variable (f : R -> R).
+
+Definition toXreal_fun : ExtendedR -> ExtendedR := 
+  fun x => match x with Xnan => Xnan | Xreal r => Xreal (f r) end.
+
+(* Interval_xreal.extension should be boolean *)
+Lemma xreal_ext_toXreal_fun : Interval_xreal.extension f toXreal_fun.
+Proof. by case. Qed.
+
+ 
+End ExtensionOfFunctionsToXreal.

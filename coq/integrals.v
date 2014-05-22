@@ -45,8 +45,6 @@ have := (F.real_correct x); rewrite /I.convert_bound /T.toR.
 by case: (F.toF x)=> [||y z t] ->; constructor. 
 Qed.
 
-Notation xreal_extension := Interval_xreal.extension.
-
 Section IntervalIntegral.
 
 (* A fixed precision *)
@@ -55,11 +53,10 @@ Variable prec : F.precision.
 Variables (f : R -> R) (iF : I.type -> I.type).
 
 (* This is a std monadic operation. Does it exist somewhere in the libs? *)
-Let g : ExtendedR -> ExtendedR := 
-  fun x => match x with Xnan => Xnan | Xreal r => Xreal (f r) end.
+Let g := toXreal_fun f. 
 
 (* g is a restriction of f as an extendedR function. *)
-Hypothesis Hfgext : xreal_extension f g.
+Let Hfgext := xreal_ext_toXreal_fun f. 
 
 (* iF is an interval extension of g *)
 Hypothesis HiFIntExt : I.extension g iF.
