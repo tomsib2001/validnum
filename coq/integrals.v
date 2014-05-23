@@ -105,59 +105,20 @@ Fixpoint integral (depth : nat) (a b : F.type) :=
   end
 .
 
+(* Definition round_down := round radix2 rnd_DN (F.prec prec). *)
+(* Definition round_up := round radix2 rnd_UP (F.prec prec). *)
 
-Check (round radix2 rnd_DN).
-SearchAbout rounding_mode.
-SearchAbout F.precision positive.
-Definition round_down := round radix2 rnd_DN (F.prec prec).
-Definition round_up := round radix2 rnd_UP (F.prec prec).
-
-Require Import Fcore_generic_fmt.
-SearchAbout generic_format F2R.
-SearchAbout float ExtendedR.
-SearchAbout round.
-  
-(* I.bnd *)
-
-(* Fixpoint integral_real (depth : nat) (a b : R) := *)
-  
 
 Section integral.
 
-(* Variables (a b : F.type). *)
-
-(* Hypothesis Hintegrable : ex_RInt f (T.toR a) (T.toR b). *)
-
-
-(* Hypothesis  Hltab : T.toR a < T.toR b. *)
-
-
-(* Lemma convboundisxReal (a b : F.type) :  (F.real a) -> (F.real b) -> I.convert_bound (I.midpoint (I.bnd a b)) = Xreal (T.toR (I.midpoint (I.bnd a b))). *)
-(* intros ha hb. *)
-(* have := (I.midpoint_correct (I.bnd a b)) => h. *)
-(* have hnempty: exists x, contains (I.convert (I.bnd a b)) (x). *)
-(* admit. *)
-(* elim : (h hnempty) => h1 h2. *)
-(* apply: h1. *)
-(* Qed. *)
-
-
-(* Hypothesis ha : I.convert_bound a = Xreal (T.toR a). *)
-(* Hypothesis hb : I.convert_bound b = Xreal (T.toR b). *)
-
-
-
 Lemma integral_correct (depth : nat) (a b : F.type) :
-  ex_RInt f (T.toR a) (T.toR b) -> T.toR a <= T.toR b ->
-  (F.real a) ->
-  (F.real b) ->
-  contains (I.convert (integral depth a b)) 
-           (Xreal (RInt f (T.toR a) (T.toR b))).
+  ex_RInt f (T.toR a) (T.toR b) -> 
+  T.toR a <= T.toR b ->
+  (F.real a) -> (F.real b) ->
+  contains (I.convert (integral depth a b)) (Xreal (RInt f (T.toR a) (T.toR b))).
 Proof.
-elim: depth a b => [ | k Hk]; move => a b Hintegrable Hleab ha hb.
+elim: depth a b => [ | k Hk] a b Hintegrable Hleab ha hb.
   by apply: integral_order_one_correct => //.
-rewrite /T.toR -![(FtoX (F.toF _))]/(I.convert_bound _).
-rewrite /integral -/integral.
 set midpoint := I.midpoint (I.bnd a b).
 have hIl : ex_RInt f (T.toR a) (T.toR midpoint).
   by apply:  (ex_RInt_Chasles_1 _ _ _ (T.toR b)) => //; apply: midpoint_bnd_in.
@@ -166,27 +127,18 @@ have hIr : ex_RInt f (T.toR midpoint) (T.toR b).
 have -> : RInt f (T.toR a) (T.toR b) =
   RInt f (T.toR a) (T.toR midpoint) + RInt f (T.toR midpoint) (T.toR b). 
   by rewrite RInt_Chasles.
-set I1 := RInt _ _ _. set I2 := RInt _ _ _.
-have hm : I.convert_bound midpoint = Xreal (T.toR midpoint).
-  move=> {k Hk Hintegrable hIl hIr I1 I2}.
-  rewrite /T.toR.
-  rewrite -![(FtoX (F.toF _))]/(I.convert_bound _).
+set I1 := RInt _ _ _; set I2 := RInt _ _ _.
+rewrite /integral -/integral -[Xreal (_ + _)]/(Xadd (Xreal I1) (Xreal I2)). 
+have [in1 in2] := midpoint_bnd_in ha hb Hleab.
+suff hm : F.real (I.midpoint (I.bnd a b)) by apply: I.add_correct; apply: Hk.
   suff /I.midpoint_correct []: 
-    exists x : ExtendedR, contains (I.convert (I.bnd a b)) x by [].
-  by exists (I.convert_bound a); apply: contains_convert_bnd_l => //; apply/F_realP.
-  have hrmidpoint : F.real midpoint by case: F_realP.
-  rewrite -[Xreal (_ + _)]/(Xadd (Xreal I1) (Xreal I2)). 
-  have [in1 in2] := midpoint_bnd_in a b ha hb Hleab.
-  by apply: I.add_correct; apply: Hk. 
+    exists x : ExtendedR, contains (I.convert (I.bnd a b)) x by move/F_realP.
+  exists (I.convert_bound a); apply: contains_convert_bnd_l => //; exact/F_realP.
 Qed.
 
 End integral.
 
 End IntervalIntegral.
-
-Print integral.
-
-SearchAbout (contains _ _).
 
 Require Import Interval_tactic.
 
