@@ -140,37 +140,9 @@ End integral.
 
 End IntervalIntegral.
 
-Require Import Interval_tactic.
-
-
-Ltac toto :=
-match goal with
-| |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
-  let v := Private.get_float a in
-  let w := Private.get_float c in
- change (contains (I.convert (I.bnd v w)) (Xreal (RInt f ra rb)))
-| _ => fail 100 "just checking" end.
-
-
-Definition f (x : R) := x.
-Definition g (x : I.type) := x.
-
-Goal forall (prec : F.precision), (0 <= RInt f 0 1 <= 1)%R.
-move => prec.
-Private.xalgorithm_pre.
-apply: (subset_contains (I.convert(integral (prec) g 5 (F.fromZ 0) (F.fromZ 1)))); last first.
-have -> : RInt f 0 1 = RInt f (T.toR (F.fromZ 0)) (T.toR (F.fromZ 1)) by admit.
-apply: integral_correct => //= .
- - admit.
- - admit.
- - admit.
- - admit.
- - admit.
-Admitted.
-   
-
 End IntegralTactic.
 
+Require Import Interval_tactic.
 Require Import Interval_generic_ops.
 Require Import Interval_transcend.
 
@@ -179,52 +151,55 @@ Module Int := FloatIntervalFull F.
 
 Import Int.
 
-Module Test := IntegralTactic F.
-Import Test.
-Check integral.
-(* Print Int.I.type. *)
-(* Print F.type. *)
-(* Print F.radix. *)
-(* Search "ext". *)
-Module T := TranscendentalFloatFast F.
-(* About T.cos_fast0. *)
-(* About T.cos_fast. *)
-(* Print  T. *)
-(* SearchAbout ((f_interval _) -> (f_interval _)). *)
+Module TestIntegral := IntegralTactic F.
+Import TestIntegral.
+
+Module FIntervalTactic := IntervalTactic F.
+Import FIntervalTactic.
+
 Definition prec10 := (10%positive) : F.precision.
 
+Definition id := (fun x : R => x).
+
+
+Ltac toto g :=
+match goal with
+| |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
+  let v := Private.get_float a in
+  let w := Private.get_float c in
+ change (contains (I.convert (I.bnd v w)) (Xreal (RInt f ra rb)));
+ apply: (subset_contains (I.convert(integral (prec10) g 0 v w)))
+| _ => fail 100 "just checking" end.
+ 
+
+Ltac pose_get_float t := 
+  let v := fresh "v" in
+  let w := Private.get_float t in
+  pose v := w.
 
 Definition f (x : R) := x.
 Definition g (x : I.type) := x.
 
-Require Import Interval_tactic.
-
-SearchAbout ex_RInt.
-
-Lemma encadrement :  (0 <= RInt f 0 1 <= 1)%R.
-Proof.
-Private.xalgorithm_pre.
-apply: (subset_contains (I.convert(integral (prec10) g 1 (F.fromZ 0) (F.fromZ 1)))); last first.
-have -> : RInt f 0 1 = RInt f (T.toR (F.fromZ 0)) (T.toR (F.fromZ 1)) by admit.
-Check (integral_correct prec10 f g).
-have toto : Int.I.extension
-         (fun x : ExtendedR =>
-          match x with
-          | Xnan => Xnan
-          | Xreal r => Xreal (f r)
-          end) g by admit.
-apply: (integral_correct prec10 f g toto 1 (F.fromZ 0) (F.fromZ 1)).
- - admit.
- - admit.
- - admit.
- - admit.
-simpl. rewrite /le_lower //=. split. 
+Goal (0 <= RInt f 0 1 <= 1)%R.
+toto g.
+- by split => /=; [apply: le_lower_refl | apply: Rle_refl].
+- have -> : I.convert = Extras.Int.I.convert. by []. (* pb de modules, a revoir*)
+  apply: integral_correct => //; last first.
+  - admit. (*à automatiser par un calcul *)
+  - admit. (* pour l'instant on laisse à l'utilisateur *)
+  - admit. (* sera fourni par la tactique *)
 Admitted.
 
+Definition foo f n a b := 
+  Eval vm_compute in (integral (prec10) f n a b).
+
+(* Definition exp10 := Eval lazy in (Int.exp prec10). long... *)
 
 
-Check integral_correct.
 
+Time Eval vm_compute in (foo (Int.exp prec10) 10 F.zero (F.fromZ 1)).
+
+Time Eval vm_compute in integral (prec10) (Int.exp prec10) 10 F.zero (F.fromZ 1).
 
 Time Eval vm_compute in integral (prec10) (Int.exp prec10) 3 F.zero (F.fromZ 1).
 (* Ibnd (Float F.radix false 824 (-9)) (Float F.radix false 938 (-9)) *)
