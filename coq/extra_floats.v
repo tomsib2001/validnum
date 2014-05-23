@@ -47,6 +47,14 @@ case/F_realP => hra /F_realP [hrb] hleab; rewrite hrb; apply: le_contains.
 rewrite hrb; exact: le_upper_refl.
 Qed.
 
+Lemma contains_convert_bnd (a b : F.type) r :  (F.real a) -> (F.real b) -> 
+  (T.toR a) <= r <= (T.toR b) -> contains (I.convert (I.bnd a b)) (Xreal r).
+Proof.
+case/F_realP => hra /F_realP [hrb] hleab; apply: le_contains.
+  by rewrite hra /le_lower /=; apply: Ropp_le_contravar; case: hleab.
+by rewrite hrb /le_lower /=; case: hleab.
+Qed.
+
 (* Remember : T.toR = fun x : F.type => proj_val (FtoX (F.toF x)) *)
 (* The statement of I.midpoint_correct is really clumsy *)
 (* contains_le is also difficult to use... *)

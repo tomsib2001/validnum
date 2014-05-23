@@ -57,23 +57,9 @@ Hypothesis Hintegrable : ex_RInt f (T.toR a) (T.toR b).
 (* a <= b *)
 Hypothesis  Hleab : T.toR a <= T.toR b.
 
-(* The conversion of a and b to ExtendedR avoids Nan *)
+(* a and b are no Nan. This cannot be deduced from Hleab *)
 Hypothesis ha : F.real a.
 Hypothesis hb : F.real b.
-(* Hypothesis ha : I.convert_bound a = Xreal (T.toR a). *)
-(* Hypothesis hb : I.convert_bound b = Xreal (T.toR b). *)
-
-(* Guillaume says that operations on F.type like (F.cmp a b = Xlt)
-  should not occur in hypotheses or proofs, unless we prove a spec on 
-  a functions (like below in the conclusion. We should specify these 
-  properties wrt to their behaviour in ExtendedR: 
- (F.cmp a b = Xlt) is replaced by (T.toR a <= T.toR b).
-  Warning, as we saw in the def of thin, we should exclude the possibility 
-  of a I.nai value, hence the extra hypotheses that I.convert gives a 'real
-  real'. Note,  (I.convert_bound a) = Xreal (T.toR a) is the most convenient
-  phrasing since it allows for rewriting in later steps of the proofs. *)
-
-(* Why the name xreal_ssr_compat.Xmul_Xreal ? *)
 
 (* we should better tune the order of the arguments of 
   I.extension2. In the current state, at line (* 1 *)
@@ -81,12 +67,6 @@ Hypothesis hb : F.real b.
   present case because we need either a first conversion step to make Xsub
   explicit, or providing explicitely the arguments, which come after prec and
   interval arguments:  apply: (I.sub_correct _ _ _ (Xreal rb) (Xreal ra)) *)
-
-
-(* Lemma toR_is_conv_bound (b0 : F.type) : (F.real b0) -> Xreal (T.toR b0) = I.convert_bound b0. *)
-(* move => hb0; rewrite /T.toR -[(FtoX (F.toF _))]/(I.convert_bound _). *)
-(* by case/F_realP: hb0 => ->.  *)
-(* Qed. *)
 
 Lemma integral_order_one_correct :
   contains
@@ -96,33 +76,20 @@ Proof.
 case elu: (iF (I.bnd a b)) => // [l u].
 set ra := T.toR a; set rb := T.toR b; fold ra rb in Hintegrable, ha, hb, Hleab.
 set Iab := RInt _ _ _.
-case: (Rle_lt_or_eq_dec _ _ Hleab) => [Hleab1 | Heqab].
+case: (Rle_lt_or_eq_dec _ _ Hleab) => [Hleab1 | Heqab]; last first.
+  + have -> : Xreal Iab = Xmul (g (Xreal ra)) (Xsub (Xreal rb) (Xreal ra)).
+      rewrite /Iab Heqab /= RInt_point; congr Xreal; ring.
+    apply: I.mul_correct; last by apply: I.sub_correct; exact: thin_correct_toR.
+    rewrite -elu; apply: HiFIntExt;  move/F_realP: ha<-.
+    by apply: contains_convert_bnd_l.
   + have -> : Xreal Iab = Xmul (Xreal (Iab / (rb - ra))) (Xreal (rb - ra)).
        rewrite xreal_ssr_compat.Xmul_Xreal; congr Xreal; field.
        by apply: Rminus_eq_contra; apply: Rlt_dichotomy_converse; right.
-    apply: I.mul_correct.
-    - apply: XRInt1_correct => // x hx. rewrite -elu -[Xreal (f x)]/(g (Xreal x)).
-      have iFab := HiFIntExt (I.bnd a b) (Xreal x).
-      by apply: iFab; rewrite /=; case/F_realP: ha => hra; 
-         case/F_realP: hb => hrb; rewrite hra hrb; move: hx; 
-         rewrite /ra /rb /T.toR -![(FtoX (F.toF _))]/(I.convert_bound _) hra hrb.
+    apply: I.mul_correct; last first.
     - rewrite -[Xreal (rb - ra)]/(Xsub (Xreal rb) (Xreal ra)). (* 1 *)
-      apply: I.sub_correct.
-        exact: thin_correct_toR.
-      (*   have -> : Xreal rb = I.convert_bound b. case/F_realP: hb => rb1 hrb1.  *)
-      (*     by rewrite hrb1 /rb /T.toR  -[(FtoX (F.toF _))]/(I.convert_bound _) hrb1. *)
-      (* exact: thin_correct. *)
-      exact: thin_correct_toR.
-  (* + rewrite (why_isnt_this_already_proved a b Heqab). *)
-    have -> : Iab = 0; first by unfold Iab; rewrite Heqab RInt_point // .
-    have ->: Xreal 0 =Xmul(g (Xreal (T.toR a))) (Xreal 0).
-    rewrite /= Rmult_0_r // .
-    apply: I.mul_correct. 
-    - rewrite -elu; apply: HiFIntExt; move/F_realP: ha<-.
-      by  apply: contains_convert_bnd_l.     
-    - have <- :  Xsub (Xreal rb) (Xreal rb) = Xreal 0 by congr Xreal; ring.
-      apply: I.sub_correct; first by exact: thin_correct_toR.
-      rewrite -Heqab; exact: thin_correct_toR.
+      apply: I.sub_correct; exact: thin_correct_toR.
+    - apply: XRInt1_correct => // x hx; rewrite -elu -[Xreal _]/(g (Xreal x)).
+      apply: HiFIntExt; exact: contains_convert_bnd.
 Qed.
 
 End OrderOne.
@@ -370,3 +337,16 @@ Time Eval vm_compute in integral (prec100) (Int.exp prec100) 10 F.zero (F.fromZ 
 (* [1.7174429602167616,1.719120969814866] *)
 (* Finished transaction in 229. secs (228.658291u,0.012001s) *)
 
+
+
+(* Guillaume says that operations on F.type like (F.cmp a b = Xlt)
+  should not occur in hypotheses or proofs, unless we prove a spec on 
+  a functions (like below in the conclusion. We should specify these 
+  properties wrt to their behaviour in ExtendedR: 
+ (F.cmp a b = Xlt) is replaced by (T.toR a <= T.toR b).
+  Warning, as we saw in the def of thin, we should exclude the possibility 
+  of a I.nai value, hence the extra hypotheses that I.convert gives a 'real
+  real'. Note,  (I.convert_bound a) = Xreal (T.toR a) is the most convenient
+  phrasing since it allows for rewriting in later steps of the proofs. *)
+
+(* Why the name xreal_ssr_compat.Xmul_Xreal ? *)
