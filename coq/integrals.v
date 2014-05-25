@@ -451,7 +451,21 @@ Time Eval vm_compute in integral (prec10) (Int.exp prec10) 10 F.zero (F.fromZ 1)
 (* [1.708984375,1.728515625] *)
 (* Finished transaction in 8. secs (8.400525u,0.004s)*)
 
+
 Definition prec30 := (30%positive) : F.precision.
+
+Time Eval vm_compute in integral (prec30) (Int.exp prec30) 12 F.zero (F.fromZ 1).
+(* Ibnd (Float F.radix false 922382922 (-29)) *)
+(*          (Float F.radix false 922608152 (-29)) *)
+(*      : f_interval F.type *)
+(* Finished transaction in 119. secs (118.387399u,0.008001s) *)
+
+Time Eval vm_compute in integral (prec30) (Int.exp prec30) 15 F.zero (F.fromZ 1).
+(* Ibnd (Float F.radix false 922481451 (-29)) *)
+(*          (Float F.radix false 922509615 (-29)) *)
+(*      : f_interval F.type *)
+(* [1.7182555999606848,1.7183080594986677] *)
+(* Finished transaction in 1119. secs (1114.773669u,0.288018s) *)
 
 Time Eval vm_compute in integral (prec30) (Int.exp prec30) 3 F.zero (F.fromZ 1).
 (* Ibnd (Float F.radix false 866040413 (-29)) *)
