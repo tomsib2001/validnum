@@ -161,30 +161,55 @@ Definition prec10 := (10%positive) : F.precision.
 
 Definition id := (fun x : R => x).
 
+Ltac interval_inclusion_by_computation :=  
+  try (by split; [apply: le_lower_refl | apply: Rle_refl]);
+      idtac "Please retry and increase the depth and/or precision".
 
-Ltac toto g :=
+(* module problem in extra_float! *)
+Lemma module_bug_assia : I.convert = Extras.Int.I.convert. Proof. by []. Qed.
+
+Ltac proves_interval_extention := idtac. 
+
+Ltac proves_RInt := idtac.
+
+(* this one should be an application of an implication which reduces the problem
+    to computation. *)
+Ltac proves_bound_order := idtac.
+
+Ltac apply_interval_correct :=
+  rewrite module_bug_assia;
+(* // kills the subgoals F.real b with b a bound of the integral. *)
+(* these are obtained by Private.get_float in thebody of intergal_tac,
+   hopefully it is alwasy automatically discharged. *)
+  apply: integral_correct => //;
+(* at this stage we have three subgoals : 
+  - that the interval function is an int. extension of the integrand
+  - that the integrand is integrable
+  - that the integration bounds are in the right order. *)
+ [proves_interval_extention | proves_RInt | proves_bound_order].
+
+Ltac integral_tac g prec depth :=
 match goal with
 | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
   let v := Private.get_float a in
   let w := Private.get_float c in
  change (contains (I.convert (I.bnd v w)) (Xreal (RInt f ra rb)));
- apply: (subset_contains (I.convert(integral (prec10) g 0 v w)))
-| _ => fail 100 "just checking" end.
+ apply: (subset_contains (I.convert (integral prec g depth v w)));
+ (* at this point we generate two subgoals:
+   - the first one succeeds by computation if the interval computed by integral
+     is sharp enough wrt to the user's problem
+   - the second one is always provable by application of interval_correct *)
+ [interval_inclusion_by_computation | apply_interval_correct]
+| _ => fail 100 "rate" end.
  
+(*(by split; [apply: le_lower_refl | apply: Rle_refl])*)
 
-Ltac pose_get_float t := 
-  let v := fresh "v" in
-  let w := Private.get_float t in
-  pose v := w.
-
-Definition f (x : R) := x.
-Definition g (x : I.type) := x.
-
-Goal (0 <= RInt f 0 1 <= 1)%R.
-toto g.
-- by split => /=; [apply: le_lower_refl | apply: Rle_refl].
-- have -> : I.convert = Extras.Int.I.convert. by []. (* pb de modules, a revoir*)
-  apply: integral_correct => //; last first.
+Lemma test (f := fun x : R => x) : (0 <= RInt f 0 1 <= 1)%R.
+Proof.
+pose g (x : I.type) := x.
+pose prec : F.precision := prec10.
+pose depth : nat := 0%nat.
+integral_tac g prec depth.
   - admit. (*à automatiser par un calcul *)
   - admit. (* pour l'instant on laisse à l'utilisateur *)
   - admit. (* sera fourni par la tactique *)
