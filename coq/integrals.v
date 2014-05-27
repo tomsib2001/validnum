@@ -1,6 +1,6 @@
-Require Psatz.
-Require Import Reals.
 Require Import List.
+Require Import Reals.
+Require Import Fourier.
 Require Import Interval_missing.
 (* Require Import ZArith. *) (* seems unnecessary?*)
 Require Import Fcore.
@@ -162,9 +162,8 @@ Definition prec10 := (10%positive) : F.precision.
 
 Definition id := (fun x : R => x).
 
-Ltac interval_inclusion_by_computation :=  
-  try (by split; [rewrite /=; admit (* Psatz.lra *)(* apply: le_lower_refl *) | rewrite /=; admit (* Psatz.lra *) (* apply: Rle_refl *)]);
-      idtac "Please retry and increase the depth and/or precision".
+Ltac interval_inclusion_by_computation :=
+  rewrite /= /le_lower /=; split; fourier.
 
 (* module problem in extra_float! *)
 Lemma module_bug_assia : I.convert = Extras.Int.I.convert. Proof. by []. Qed.
