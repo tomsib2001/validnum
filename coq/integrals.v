@@ -1,7 +1,8 @@
+Require Psatz.
 Require Import Reals.
 Require Import List.
 Require Import Interval_missing.
-Require Import ZArith.
+(* Require Import ZArith. *) (* seems unnecessary?*)
 Require Import Fcore.
 Require Import Interval_xreal.
 Require Import Interval_definitions.
@@ -162,7 +163,7 @@ Definition prec10 := (10%positive) : F.precision.
 Definition id := (fun x : R => x).
 
 Ltac interval_inclusion_by_computation :=  
-  try (by split; [apply: le_lower_refl | apply: Rle_refl]);
+  try (by split; [rewrite /=; admit (* Psatz.lra *)(* apply: le_lower_refl *) | rewrite /=; admit (* Psatz.lra *) (* apply: Rle_refl *)]);
       idtac "Please retry and increase the depth and/or precision".
 
 (* module problem in extra_float! *)
@@ -174,7 +175,7 @@ Ltac proves_RInt := idtac.
 
 (* this one should be an application of an implication which reduces the problem
     to computation. *)
-Ltac proves_bound_order := idtac.
+Ltac proves_bound_order := idtac(* rewrite /Extras.Int.T.toR /= *).
 
 Ltac apply_interval_correct :=
   rewrite module_bug_assia;
@@ -193,26 +194,31 @@ match goal with
 | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
   let v := Private.get_float a in
   let w := Private.get_float c in
+  let lb := Private.get_float ra in
+  let ub := Private.get_float rb in
  change (contains (I.convert (I.bnd v w)) (Xreal (RInt f ra rb)));
- apply: (subset_contains (I.convert (integral prec g depth v w)));
- (* at this point we generate two subgoals:
-   - the first one succeeds by computation if the interval computed by integral
-     is sharp enough wrt to the user's problem
-   - the second one is always provable by application of interval_correct *)
+ apply: (subset_contains (I.convert (integral prec g depth lb ub)));
+ (* (* at this point we generate two subgoals: *)
+ (*   - the first one succeeds by computation if the interval computed by integral *)
+ (*     is sharp enough wrt to the user's problem *)
+ (*   - the second one is always provable by application of interval_correct *) *)
  [interval_inclusion_by_computation | apply_interval_correct]
-| _ => fail 100 "rate" end.
+(* | _ => fail 100 "rate" *) end.
  
 (*(by split; [apply: le_lower_refl | apply: Rle_refl])*)
 
-Lemma test (f := fun x : R => x) : (0 <= RInt f 0 1 <= 1)%R.
+
+Lemma test (f := fun x : R => x) : (0 <= RInt f 0 1 <= 3 / 2)%R.
 Proof.
 pose g (x : I.type) := x.
 pose prec : F.precision := prec10.
 pose depth : nat := 0%nat.
 integral_tac g prec depth.
-  - admit. (*à automatiser par un calcul *)
-  - admit. (* pour l'instant on laisse à l'utilisateur *)
   - admit. (* sera fourni par la tactique *)
+  - admit. (* pour l'instant on laisse à l'utilisateur *)
+  - admit. (*à automatiser par un calcul *)
+
+
 Admitted.
 
 Definition foo f n a b := 
