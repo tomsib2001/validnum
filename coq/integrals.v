@@ -24,13 +24,15 @@ Require Import ssreflect ssrfun ssrbool.
 
 Module IntegralTactic (F : FloatOps with Definition even_radix := true).
 
-Module Int := FloatIntervalFull F.
-Module IntA := IntervalAlgos Int.
-
 Module Extras := ExtraFloatInterval F.
 
-Import Int.
+Module FInt := FloatIntervalFull F.
+Module IntA := IntervalAlgos FInt.
+
+Import FInt.
 Import Extras.
+
+Export FInt.
 
 Section IntervalIntegral.
 
@@ -147,16 +149,20 @@ Require Import Interval_tactic.
 Require Import Interval_generic_ops.
 Require Import Interval_transcend.
 
-Module F :=  (GenericFloat Radix2).
-Module Int := FloatIntervalFull F.
+Module F :=  GenericFloat Radix2.
+(* Module FInt := FloatIntervalFull F. *)
 
-Import Int.
-
-Module TestIntegral := IntegralTactic F.
-Import TestIntegral.
+(* Import FInt. *)
 
 Module FIntervalTactic := IntervalTactic F.
 Import FIntervalTactic.
+
+
+Module TestIntegral := IntegralTactic F.
+
+Import TestIntegral.FInt.
+Import TestIntegral.
+
 
 Definition prec10 := (10%positive) : F.precision.
 
@@ -166,7 +172,7 @@ Ltac interval_inclusion_by_computation :=
   rewrite /= /le_lower /=; split; fourier.
 
 (* module problem in extra_float! *)
-Lemma module_bug_assia : I.convert = Extras.Int.I.convert. Proof. by []. Qed.
+Lemma module_bug_assia : I.convert = FInt.I.convert. Proof. by []. Qed.
 
 Ltac proves_interval_extention := idtac. 
 
@@ -174,10 +180,10 @@ Ltac proves_RInt := idtac.
 
 (* this one should be an application of an implication which reduces the problem
     to computation. *)
-Ltac proves_bound_order := idtac(* rewrite /Extras.Int.T.toR /= *).
-
+Ltac proves_bound_order := idtac(* rewrite /Extras.FInt.T.toR /= *).
+ 
 Ltac apply_interval_correct :=
-  rewrite module_bug_assia;
+  (* rewrite module_bug_assia; *)
 (* // kills the subgoals F.real b with b a bound of the integral. *)
 (* these are obtained by Private.get_float in thebody of intergal_tac,
    hopefully it is alwasy automatically discharged. *)
@@ -195,24 +201,22 @@ match goal with
   let w := Private.get_float c in
   let lb := Private.get_float ra in
   let ub := Private.get_float rb in
- change (contains (I.convert (I.bnd v w)) (Xreal (RInt f ra rb)));
- apply: (subset_contains (I.convert (integral prec g depth lb ub)));
- (* (* at this point we generate two subgoals: *)
- (*   - the first one succeeds by computation if the interval computed by integral *)
+  change (contains (I.convert (I.bnd v w)) (Xreal (RInt f ra rb)));
+  apply: (subset_contains (I.convert (integral prec g depth lb ub)));
+ (* at this point we generate two subgoals: *)
+ (*- the first one succeeds by computation if the interval computed by integral *)
  (*     is sharp enough wrt to the user's problem *)
- (*   - the second one is always provable by application of interval_correct *) *)
+ (*   - the second one is always provable by application of interval_correct *) 
  [interval_inclusion_by_computation | apply_interval_correct]
-(* | _ => fail 100 "rate" *) end.
+ | _ => fail 100 "rate" end.
  
-(*(by split; [apply: le_lower_refl | apply: Rle_refl])*)
-
 
 Lemma test (f := fun x : R => x) : (0 <= RInt f 0 1 <= 3 / 2)%R.
 Proof.
 pose g (x : I.type) := x.
 pose prec : F.precision := prec10.
-pose depth : nat := 0%nat.
-integral_tac g prec depth.
+pose depth : nat := 0%nat. 
+integral_tac g prec depth. 
   - admit. (* sera fourni par la tactique *)
   - admit. (* pour l'instant on laisse à l'utilisateur *)
   - admit. (*à automatiser par un calcul *)
@@ -224,6 +228,7 @@ Definition foo f n a b :=
   Eval vm_compute in (integral (prec10) f n a b).
 
 (* Definition exp10 := Eval lazy in (Int.exp prec10). long... *)
+
 
 
 

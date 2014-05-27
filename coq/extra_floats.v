@@ -19,10 +19,9 @@ Unset Printing Implicit Defensive.
 
 Module ExtraFloatInterval (F : FloatOps with Definition even_radix := true).
 
-Module Int := FloatIntervalFull F.
+Module FInt := FloatIntervalFull F.
 
-Import Int.
-Export Int.
+Import FInt.
 
 Lemma F_realP (f : F.type) : 
  reflect (I.convert_bound f = Xreal (T.toR f)) (F.real f).
@@ -77,7 +76,8 @@ move: le_xa_xm.
 by rewrite isr_xm /xa (F_realP _ hra) /le_lower /=; exact: Ropp_le_cancel. 
 Qed.
 
-Definition thin (f : F.type) : Int.type := if F.real f then I.bnd f f else I.nai.
+Definition thin (f : F.type) : FInt.type := 
+  if F.real f then I.bnd f f else I.nai.
 
 (* Remember: (I.convert_bound x) is (FtoX (F.toF x)) *)
 Lemma thin_correct (f : F.type) : 
@@ -87,7 +87,6 @@ rewrite /thin I.real_correct.
 case ex: (I.convert_bound f) => [|r] //=.
 rewrite ex; split; exact: Rle_refl.
 Qed.
-
 
 Lemma thin_correct_toR (f : F.type) : 
   (F.real f) -> contains (I.convert (thin f)) (Xreal (T.toR f)).
