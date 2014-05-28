@@ -164,7 +164,7 @@ Import TestIntegral.FInt.
 Import TestIntegral.
 
 Ltac interval_inclusion_by_computation :=
-  rewrite /= /le_lower /=; split; fourier.
+  vm_compute; split; rewrite -/(Rle _ _); fourier.
 
 Ltac proves_interval_extention := idtac. 
 
@@ -178,7 +178,8 @@ Ltac apply_interval_correct :=
 (* // kills the subgoals F.real b with b a bound of the integral. *)
 (* these are obtained by Private.get_float in thebody of intergal_tac,
    hopefully it is always automatically discharged. *)
-  apply: integral_correct => //;
+(* WARNING : do not use "apply:" instead of "apply" : it computes too much*)
+  apply integral_correct => //;
   [proves_interval_extention | proves_RInt | proves_bound_order].
 
 Ltac integral_tac_test g prec depth :=
@@ -217,20 +218,20 @@ pose g (x : I.type) := x.
 pose prec : F.precision := prec10.
 pose depth : nat := 1%nat. 
 integral_tac g prec depth.
-  - intros b x; by case : x.
+- intros b x; by case : x.
   (* - admit. (* sera fourni par la tactique *) *)
   - admit. (* pour l'instant on laisse à l'utilisateur *)
 Admitted.
 
-Lemma test2 (f := fun x : R => Rtrigo_def.exp x) : (0 <= RInt f 0 1 <= 7/8)%R.
+Lemma test2 (f := fun x : R => Rtrigo_def.exp x) : (0 <= RInt f 0 1 <= 23/8)%R.
 Proof.
 pose g (x : I.type) := FInt.exp prec10 x.
 pose prec : F.precision := prec10.
 pose depth : nat := 0%nat.
 integral_tac g prec depth.
--
-rewrite /g. rewrite /integral. rewrite /exp.
-rewrite /=.
+- admit.
+- admit.
+Qed.
 
 Definition foo f n a b := 
   Eval vm_compute in (integral (prec10) f n a b).
