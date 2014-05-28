@@ -163,16 +163,8 @@ Module TestIntegral := IntegralTactic F.
 Import TestIntegral.FInt.
 Import TestIntegral.
 
-
-Definition prec10 := (10%positive) : F.precision.
-
-Definition id := (fun x : R => x).
-
 Ltac interval_inclusion_by_computation :=
   rewrite /= /le_lower /=; split; fourier.
-
-(* module problem in extra_float! *)
-Lemma module_bug_assia : I.convert = FInt.I.convert. Proof. by []. Qed.
 
 Ltac proves_interval_extention := idtac. 
 
@@ -183,16 +175,11 @@ Ltac proves_RInt := idtac.
 Ltac proves_bound_order := rewrite /T.toR /=; fourier.
  
 Ltac apply_interval_correct :=
-  (* rewrite module_bug_assia; *)
 (* // kills the subgoals F.real b with b a bound of the integral. *)
 (* these are obtained by Private.get_float in thebody of intergal_tac,
-   hopefully it is alwasy automatically discharged. *)
+   hopefully it is always automatically discharged. *)
   apply: integral_correct => //;
-(* at this stage we have three subgoals : 
-  - that the interval function is an int. extension of the integrand
-  - that the integrand is integrable
-  - that the integration bounds are in the right order. *)
- [proves_interval_extention | proves_RInt | proves_bound_order].
+  [proves_interval_extention | proves_RInt | proves_bound_order].
 
 Ltac integral_tac g prec depth :=
 match goal with
@@ -211,6 +198,9 @@ match goal with
  | _ => fail 100 "rate" end.
  
 
+(* For tests and benchmarks *)
+Definition prec10 := (10%positive) : F.precision.
+
 Lemma test (f := fun x : R => x) : (0 <= RInt f 0 1 <= 3 / 2)%R.
 Proof.
 pose g (x : I.type) := x.
@@ -225,9 +215,6 @@ Definition foo f n a b :=
   Eval vm_compute in (integral (prec10) f n a b).
 
 (* Definition exp10 := Eval lazy in (Int.exp prec10). long... *)
-
-
-
 
 Time Eval vm_compute in (foo (Int.exp prec10) 10 F.zero (F.fromZ 1)).
 
