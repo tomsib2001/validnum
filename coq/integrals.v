@@ -150,9 +150,9 @@ Require Import Interval_generic_ops.
 Require Import Interval_transcend.
 
 Module F :=  GenericFloat Radix2.
-(* Module FInt := FloatIntervalFull F. *)
+Module FInt := FloatIntervalFull F.
 
-(* Import FInt. *)
+Import FInt.
 
 Module FIntervalTactic := IntervalTactic F.
 Import FIntervalTactic.
@@ -181,6 +181,16 @@ Ltac apply_interval_correct :=
   apply: integral_correct => //;
   [proves_interval_extention | proves_RInt | proves_bound_order].
 
+Ltac integral_tac_test g prec depth :=
+match goal with
+| |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
+  let v := Private.get_float a in
+  let w := Private.get_float c in
+  let lb := Private.get_float ra in
+  let ub := Private.get_float rb in
+  change (contains (I.convert (I.bnd v w)) (Xreal (RInt f ra rb)));
+  apply: (subset_contains (I.convert (integral prec g depth lb ub))) end.
+
 Ltac integral_tac g prec depth :=
 match goal with
 | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
@@ -201,15 +211,25 @@ match goal with
 (* For tests and benchmarks *)
 Definition prec10 := (10%positive) : F.precision.
 
-Lemma test (f := fun x : R => x) : (0 <= RInt f 0 1 <= 3 / 2)%R.
+Lemma test (f := fun x : R => x) : (0 <= RInt f 0 1 <= 7/8)%R.
 Proof.
 pose g (x : I.type) := x.
 pose prec : F.precision := prec10.
-pose depth : nat := 0%nat. 
-integral_tac g prec depth. 
-  - admit. (* sera fourni par la tactique *)
+pose depth : nat := 1%nat. 
+integral_tac g prec depth.
+  - intros b x; by case : x.
+  (* - admit. (* sera fourni par la tactique *) *)
   - admit. (* pour l'instant on laisse à l'utilisateur *)
 Admitted.
+
+Lemma test2 (f := fun x : R => Rtrigo_def.exp x) : (0 <= RInt f 0 1 <= 7/8)%R.
+Proof.
+pose g (x : I.type) := FInt.exp prec10 x.
+pose prec : F.precision := prec10.
+pose depth : nat := 0%nat.
+integral_tac_test g prec depth.
+rewrite /g. rewrite /integral. rewrite /exp.
+rewrite /=.
 
 Definition foo f n a b := 
   Eval vm_compute in (integral (prec10) f n a b).
