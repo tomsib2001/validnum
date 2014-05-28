@@ -180,7 +180,7 @@ Ltac proves_RInt := idtac.
 
 (* this one should be an application of an implication which reduces the problem
     to computation. *)
-Ltac proves_bound_order := idtac(* rewrite /Extras.FInt.T.toR /= *).
+Ltac proves_bound_order := rewrite /T.toR /=; fourier.
  
 Ltac apply_interval_correct :=
   (* rewrite module_bug_assia; *)
@@ -219,9 +219,6 @@ pose depth : nat := 0%nat.
 integral_tac g prec depth. 
   - admit. (* sera fourni par la tactique *)
   - admit. (* pour l'instant on laisse à l'utilisateur *)
-  - admit. (*à automatiser par un calcul *)
-
-
 Admitted.
 
 Definition foo f n a b := 
