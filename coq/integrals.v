@@ -150,9 +150,9 @@ Require Import Interval_generic_ops.
 Require Import Interval_transcend.
 
 Module F :=  GenericFloat Radix2.
-Module FInt := FloatIntervalFull F.
+(* Module FInt := FloatIntervalFull F. *)
 
-Import FInt.
+(* Import FInt. *)
 
 Module FIntervalTactic := IntervalTactic F.
 Import FIntervalTactic.
@@ -227,7 +227,8 @@ Proof.
 pose g (x : I.type) := FInt.exp prec10 x.
 pose prec : F.precision := prec10.
 pose depth : nat := 0%nat.
-integral_tac_test g prec depth.
+integral_tac g prec depth.
+-
 rewrite /g. rewrite /integral. rewrite /exp.
 rewrite /=.
 
