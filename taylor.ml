@@ -30,7 +30,7 @@ in let temp = (taylorCosAux order) in
 (* #trace iMult;; *)
 let t = taylorCos 2 (0.5,1.6);;
 cos 1.6;;
-(* le résultat n'est pas correct parce que dans la formule de Taylor Lagrange, le reste doitêtre majoré par l'image de l'intervalle par la dérivée n-ième, ce qu'on ne peut pas obtenirsans programmer la dérivation symbolique. *)
+(* le résultat n'est pas correct parce que dans la formule de Taylor Lagrange, le reste doit être majoré par l'image de l'intervalle par la dérivée n-ième, ce qu'on ne peut pas obtenir sans programmer la dérivation symbolique. *)
 
 
 let rec formalDer int2Const zero one var = 
