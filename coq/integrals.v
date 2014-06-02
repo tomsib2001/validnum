@@ -223,14 +223,78 @@ integral_tac g prec depth.
   - admit. (* pour l'instant on laisse à l'utilisateur *)
 Admitted.
 
+
+
+
+
+Print exp_correct.
+About exp_correct.
+SearchAbout I.extension.
+
+
+Lemma extension_comp f g h k : I.extension f g -> I.extension h k -> I.extension (fun x => f ( h x)) (fun x => g ( k x)).
+Proof.
+intros extfg extfhk.
+intros i x Hcontains.
+by apply: extfg; apply: extfhk.
+Qed.
+
+Lemma extension_comp_xreal f g h k : I.extension (toXreal_fun f) g -> I.extension (toXreal_fun h) k -> I.extension (toXreal_fun (fun x => f (h x))) (fun x => g ( k x)).
+Proof.
+intros extfg exthk.
+intros i x.
+have triv  : toXreal_fun f Xnan = Xnan by [].
+have triv2 : toXreal_fun h Xnan = Xnan by [].
+have triv3 (r: R) : toXreal_fun f (Xreal r) = Xreal (f r) by [].
+have triv4 (r: R) : toXreal_fun h (Xreal r) = Xreal (h r) by [].
+case: x => //.
+ - have foo :=  extfg (k i) Xnan.
+   rewrite triv in foo.
+   intros ciXnan.
+   apply: foo.
+   have foo2 := exthk i Xnan.
+   rewrite triv2 in foo2.
+   by apply: foo2 => // .
+ - intros r Hir.
+   have foo := extfg (k i) (Xreal (h r)).
+   rewrite triv3 in foo.
+   apply: foo.
+   have foo2 := exthk (i) (Xreal (r)).
+   rewrite triv4 in foo2.
+   by apply: foo2 => //.
+Qed.
+
+
+Definition f (x : R) := Rtrigo_def.exp (Rtrigo_def.cos x).
+Definition g (x : I.type) := FInt.exp prec10 (FInt.cos prec10 x).
+
+Ltac extension_tac t := match t with
+ | (fun (x : I.type) => exp prec10 (cos prec10 x)) => idtac 
+ (* | FInt.exp _ ?e => idtac (* apply: exp_correct *)(* ; extension_tac e  *) *)
+end.
+
+
+Lemma test_extension : I.extension (toXreal_fun f) g.
+Proof.
+Set Printing All.
+rewrite /g.
+
+extension_tac (fun (x : I.type) => exp prec10 (cos prec10 x)).
+rewrite /f /g.
+apply: (extension_comp_xreal Rtrigo_def.exp (FInt.exp prec10) Rtrigo_def.cos (FInt.cos prec10)).
+- exact: exp_correct.
+- exact: cos_correct.
+Qed.
+
+
 Lemma test2 (f := fun x : R => Rtrigo_def.exp x) : (0 <= RInt f 0 1 <= 23/8)%R.
 Proof.
 pose g (x : I.type) := FInt.exp prec10 x.
 pose prec : F.precision := prec10.
-pose depth : nat := 0%nat.
+pose depth : nat := 1%nat.
 integral_tac g prec depth.
-- admit.
-- admit.
+- by apply: exp_correct.
+- by admit.
 Qed.
 
 Definition foo f n a b := 
