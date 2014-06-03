@@ -8,3 +8,8 @@
 *.cmxs
 *.cmxa
 *~
+.depend*
+*.vo
+*.glob
+*.cache
+#*#
