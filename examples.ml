@@ -1,13 +1,12 @@
 open Basicdefs;;
+open Reification;;
+open Integrals;;
+open Diffeq;;
 open Bisection;;
 open Newton;;
-open Integrals;;
-open Reification;;
-open Diffeq;;
 open Taylor;;
 
 let heavy = false;;
-
 
 
 
@@ -41,22 +40,22 @@ iSin (3., 7.);;
 let sI x = iMult (iSin x) (iSub x (iCos x));;
 let s x = (sin x) *. (x -. (cos x));;
 
-if heavy then bisect 0.00000000000001 s sI ~-.10. 10. else [];;
+if heavy then bisect 0.00000000000001 s sI 0. 10. else [];;
 
 (* examples for the Newton method *)
 let s x = iMult (iSin x) (iSub x (iCos x));; (* rappel *)
 let dS x = iMult (iCos x) (iPlus (iSub (x) (iCos x)) (iMult (iSin x) (iPlus (1.,1.) (iSin x))));; (* sa dérivée étendue par intervalles *)
 let sReelle x = (sin x) *. (x -. (cos x));;
 
-newton (neg 7., neg 6.) sReelle s (dS) 10 (0.000000001);;
+newton (6., 7.) sReelle s (dS) 10 1e-9;;
 
 
 (* examples for integrals *)
 let iF x = iSin (iPlus (iExp x) x);;
 (* the following computation is heavy *)
 
-let (u,v) = int_iFun_eps2 1.0 iF (0.,8.);;
-print_interval (u,v);;
+(* let (u,v) = int_iFun_eps2 0.001 iF (0.,8.);; *)
+(* print_interval (u,v);; *)
 
 
 (* examples of specializing an elemFUn to a float -> float function *)
@@ -70,14 +69,19 @@ let f = sym2floatFun fSym;;
 (* example of sym2floatFun *)
 let fSym = Sin(Plus(Var "x", Exp (Var "x")));;
 let iF = sym2iFunFloat fSym;;
-(* iF (0.01,0.02);; *)
+iF (0.01,0.02);;
 let f = sym2floatFun fSym;;
-(* f 0.01;; *)
+f 0.01;;
 
 (* example of automatic differentiation *)
 let fDif = sym2ad1 fSym;;
 fDif (0.01,0.01);;
 (1. +. exp(0.01)) *. cos (0.01 +. exp(0.01));;
+
+(* example of formal derivation *)
+let fSec = formalDer float_of_int 0. 1. "x" fSym;;
+
+let fY = subs (Exp(Var "x")) (Var "y") fSym;;
 
 let gSym = Mult(Var "x", Mult(Var "x",Var "x"));;
 let gDiff = sym2ad1 gSym;;
@@ -113,10 +117,10 @@ let makeIfunFromDiffEq2 steps intprec x0 y0 valinit f x1  =
   | [] -> failwith "Yet another empty list error"
   | h::t -> h x1;;
 
-let newICos = makeIfunFromDiffEq2 4 3 (thin 0.) [thin 1.;thin 0.] [(fun x -> (neg 1.,1.));(fun x -> (neg 1.,1.))] (fCos (fun f -> (fun x -> iNeg (f x))));;
+let newICos = makeIfunFromDiffEq2 5 3 (thin 0.) [thin 1.;thin 0.] [(fun x -> (neg 1.,1.));(fun x -> (neg 1.,1.))] (fCos (fun f -> (fun x -> iNeg (f x))));;
 
 (* à décommenter pour les tests
-On constate que sur le cosinus, cette méthode n'est pas géniale
+On constate que sur le cosinus, cette méthode n'est pas géniale loin de 0
  *)
 newICos (0.01,1.5);;
 newICos (0.1,0.2);;
@@ -134,7 +138,7 @@ On donne comme encadrement de départ de la fonction [-10.,10.]
  *)
 let fEx1eff = makeIfunFromDiffEq2 4 2 (thin 0.) [thin 0.] [fun x -> (neg 1.,1.)] fEx1;;
 
-(* fEx1eff (0.,0.001);; *)
+fEx1eff (0.,0.001);;
 
 (* Exemple de W.T. 186,5 *)
 (* x'(t) = -t * x(t) *)
@@ -154,6 +158,9 @@ print_interval i;;
 
 
 
+(* test of estimateSolCutNonLin *)
+estimateSolCutNonLin 0. 5 3 (thin 0.5) (fun x -> thin (neg 1.,1.)) (fun f -> )
+
 
 (* test of simple enclosure methods *)
 let z0ExpConst = (0.,10.) (* approximation grossière de l'exponentielle sur [0,1] *)
@@ -172,9 +179,15 @@ let l = makeList 0. 1. 3 in
 clean(l);;
 
 
-let x0=  (0.5,0.5) in
-get_enclosure 0. 0.1 14  phiExp x0 (fun x y -> (0.,3.));;
+(* let x0=  (0.5,0.5) in *)
+(* get_enclosure 0. 0.1 14  phiExp x0 (fun x y -> (0.,3.));; *)
 
-let l = (makeList 0. 1. 1);;
+(* let l = (makeList 0. 1. 1);; *)
 
-estimateSolCut 0. 3 0 [1.] [1.] [fun x -> (0.,10.)] (fun x -> x) l;;
+(* estimateSolCut 0. 3 0 [1.] [1.] [fun x -> (0.,10.)] (fun x -> x) l;; *)
+
+(* examples from taylor.ml *)
+
+let t1 = getTaylorApproxSymbolic foi "x" 4 (Cos (Var "x")) (Var "x0") (Var "x");;
+
+elemFun_to_string string_of_float t1;;

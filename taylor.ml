@@ -176,13 +176,13 @@ sym2floatFun f (0.03);;
 
 
 (* Maintenant qu'on a Taylor, on peut retenter de définir iSin au moins au voisinage de 0: *)
-(* let iSin x = let (a,b) = getTaylorApproxInterval 8 (Sin (Var "x")) (thin 0.) x in *)
-(* 	     iPlus a b;; *)
+let iSinBis x = let (a,b) = getTaylorApproxInterval "x" 8 (Sin (Var "x")) (0.) x in
+	     iPlus a b;;
 
-(* let iCos x = let (a,b) = getTaylorApproxInterval 8 (Cos (Var "x")) (thin 0.) x in *)
-(* 	     iPlus a b;; *)
+let iCosBis x = let (a,b) = getTaylorApproxInterval "x" 8 (Cos (Var "x")) (0.) x in
+	     iPlus a b;;
 
-
+(* iCos (thin 3.14159);; *)
 
 (* let fEx1 l = match l with *)
 (*   | [a] -> [fun (x: intervalle) ->  (iSin(iPlus x (iCos (a x))))] *)
@@ -284,13 +284,16 @@ let high_order_enclosure (f:string) (var:string) phi order t0 x0 t1 (valinit : i
     let akS1 = (List.nth firstOrderEnc (order+1)) in
     let errorTerm = 
       iMult (iDiv akS1 (thin (foi (fact(order+1))))) (iPow (thin (t1 -. t0)) (order+1)) in
-    (horner_eval iMult iPlus (thin 0.) (thin (t1 -. t0)) (List.rev thincoeffs),errorTerm)
+    Some (horner_eval iMult iPlus (thin 0.) (thin (t1 -. t0)) (List.rev thincoeffs),errorTerm)
   else
-    failwith "Invalid approximation, try something wider or reduce the interval"
+    begin print_string "Invalid approximation, try something wider or reduce the interval"; None end
 ;;
 
-high_order_enclosure "f" "x" ((Var "x")) 2 0. (thin 1.) 0.1 (0.,3.);;
+let Some(a,b) = high_order_enclosure "f" "x" ((Var "x")) 15 0. (thin 1.) 0.5 (neg 100.,100.);;
 
+let c = iPlus a b;;
+
+3;;
 
 (* let i = (high_order_enclosure "f" "x" ((Var "x")) 20 0. (thin 1.) 1. (neg 10.,10.));; *)
 (* diam (iPlus (fst i) (snd i));; *)
@@ -300,10 +303,13 @@ high_order_enclosure "f" "x" ((Var "x")) 2 0. (thin 1.) 0.1 (0.,3.);;
 
 
 let high_order_enclosure_final f var phi order t0 x0 t1 (valinit : intervalle) =
-  let (res,error) = high_order_enclosure f var phi order t0 x0 t1 valinit in
+  let (res,error) = match high_order_enclosure f var phi order t0 x0 t1 valinit with
+    | Some(a,b) -> (a,b)
+    | _ -> ((minf,pinf),(0.,0.))
+ in
   iPlus res error;;
 
-high_order_enclosure "f" "x" (Neg(Mult(Var "t",Var "x"))) 5 0. (0.5,0.5) 1. (neg 19.,19.);;
+high_order_enclosure "f" "x" (Neg(Mult(Var "t",Var "x"))) 10 0. (0.5,0.5) 0.1 (neg 200.,200.);;
 
 let estimateSolCutTaylor (t0 : float)  order  (x0: intervalle) var f phi (valinit : intervalle) l =
   let rec aux (x:intervalle) (t1:float) = function
@@ -334,7 +340,7 @@ let cutList k l =
     | (m,h::t) -> aux (h::res) (m-1,t)
   in List.rev (aux [] (k,l));;
 
-cutList 10 [1;2;3;4;5;6];;
+(* cutList 10 [1;2;3;4;5;6];; *)
 
 (* let replaceAccordingTo phi eqOrder maxDer f var  (expr : 'a elemFun) =  *)
 (*   let rec aux = function *)
@@ -376,8 +382,10 @@ let phiCos = [VarFun("f",1,Var "t"); Neg(VarFun("f",0,Var "t"))];;
 getCoeffsSol_dim_n 7 "f" 0. [thin 1.;thin 0.] "t" phiCos;;
 
 
-(* verification for the polynomial x^2 - 3*x + 1 with the diff eqn: x'' = 2 *)
-getCoeffsSol_dim_n 7 "f" 0. [thin 1.;thin (neg 3.)] "t" [VarFun("f",1,Var "t"); Const (thin 2.)];;
+(* verification for the polynomial 2*x^2 - 3*x + 1 with the diff eqn: x'' = 4 *)
+let lpol = getCoeffsSol_dim_n 7 "f" 0. [thin 1.;thin (neg 3.)] "t" [VarFun("f",1,Var "t"); Const (thin 4.)];;
+
+toSeries iDiv (fun i -> thin (foi i)) lpol;;
 
 let check_enclosure_dim_n (t0 : float) (x0 : intervalle list) (t : float) (phi : intervalle elemFun list) f var (valinit : (intervalle -> intervalle) list) depth =
   let rec aux res = function
