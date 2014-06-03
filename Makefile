@@ -69,7 +69,7 @@
 #
 # The Caml sources (including camlyacc and camllex source files)
 
-SOURCES = basicdefs.ml  reification.ml integrals.ml diffeq.ml  bisection.ml   taylor.ml  newton.ml examples.ml benchmarks.ml
+SOURCES = basicdefs.ml reification.ml integrals.ml diffeq.ml  bisection.ml taylor.ml newton.ml examples.ml benchmarks.ml
 
 # The executable file to generate
 
@@ -124,7 +124,7 @@ WITHDBM =dbm.cma -cclib -lmldbm -cclib -lndbm
 
 all:: .depend.input .depend $(EXEC)
 
-opt : $(EXEC).opt
+opt : .depend.input .depend $(EXEC).opt
 
 #ocamlc -custom other options graphics.cma other files -cclib -lgraphics -cclib -lX11
 #ocamlc -thread -custom other options threads.cma other files -cclib -lthreads
