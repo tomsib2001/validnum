@@ -148,8 +148,10 @@ End IntegralTactic.
 Require Import Interval_tactic.
 Require Import Interval_generic_ops.
 Require Import Interval_transcend.
-
-Module F :=  GenericFloat Radix2.
+Require Import Interval_bigint_carrier.
+Require Import Interval_specific_ops.
+Module F := SpecificFloat BigIntRadix2.
+(* Module F :=  GenericFloat Radix2. *)
 (* Module FInt := FloatIntervalFull F. *)
 
 (* Import FInt. *)
@@ -210,7 +212,8 @@ match goal with
  
 
 (* For tests and benchmarks *)
-Definition prec10 := (10%positive) : F.precision.
+Require Import BigZ.
+Definition prec10 := (10%bigZ) : F.precision.
 
 Lemma test (f := fun x : R => x) : (0 <= RInt f 0 1 <= 7/8)%R.
 Proof.
@@ -297,14 +300,14 @@ integral_tac g prec depth.
 - by admit.
 Qed.
 
-Definition foo f n a b := 
-  Eval vm_compute in (integral (prec10) f n a b).
+(* Definition foo f n a b :=  *)
+(*   Eval vm_compute in (integral (prec10) f n a b). *)
 
-Print foo.
+(* Print foo. *)
 
 (* Definition exp10 := Eval lazy in (Int.exp prec10). long... *)
 
-Time Eval vm_compute in (foo (FInt.exp prec10) 10 F.zero (F.fromZ 1)).
+(* Time Eval vm_compute in (foo (FInt.exp prec10) 10 F.zero (F.fromZ 1)). *)
 
 Time Eval vm_compute in integral (prec10) (FInt.exp prec10) 10 F.zero (F.fromZ 1).
 
@@ -324,7 +327,7 @@ Time Eval vm_compute in integral (prec10) (FInt.exp prec10) 10 F.zero (F.fromZ 1
 (* Finished transaction in 8. secs (8.400525u,0.004s)*)
 
 
-Definition prec30 := (30%positive) : F.precision.
+Definition prec30 := (30%bigZ) : F.precision.
 
 Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 12 F.zero (F.fromZ 1).
 (* Ibnd (Float F.radix false 922382922 (-29)) *)
@@ -361,7 +364,7 @@ Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 10 F.zero (F.fromZ 1
 (*Finished transaction in 28. secs (28.685793u,0.060004s) *)
 
 
-Definition prec100 := (100%positive) : F.precision.
+Definition prec100 := (100%bigZ) : F.precision.
 
 Time Eval vm_compute in integral (prec100) (FInt.exp prec100) 3 F.zero (F.fromZ 1).
 (* Ibnd (Float F.radix false 1022440057055222484579125177733 (-99)) *)
