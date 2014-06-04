@@ -48,7 +48,8 @@ Let g := toXreal_fun f.
 Let Hfgext := xreal_extension_toXreal_fun f. 
 
 (* iF is an interval extension of g *)
-Hypothesis HiFIntExt : I.extension g iF.
+(* Hypothesis HiFIntExt : I.extension g iF. *)
+Hypothesis HiFIntExt : forall xi x, contains (I.convert xi) (Xreal x) -> contains (I.convert (iF xi)) (Xreal (f x)).
 
 Section OrderOne.
 
@@ -91,9 +92,12 @@ case: (Rle_lt_or_eq_dec _ _ Hleab) => [Hleab1 | Heqab]; last first.
     apply: I.mul_correct; last first.
     - rewrite -[Xreal (rb - ra)]/(Xsub (Xreal rb) (Xreal ra)). (* 1 *)
       apply: I.sub_correct; exact: thin_correct_toR.
+      (* try and show l * (b - a) <= int <= u * (b - a) instead *)
     - apply: XRInt1_correct => // x hx; rewrite -elu -[Xreal _]/(g (Xreal x)).
       apply: HiFIntExt; exact: contains_convert_bnd.
 Qed.
+
+About I.midpoint_correct.
 
 End OrderOne.
 
@@ -139,9 +143,74 @@ suff hm : F.real (I.midpoint (I.bnd a b)) by apply: I.add_correct; apply: Hk.
   exists (I.convert_bound a); apply: contains_convert_bnd_l => //; exact/F_realP.
 Qed.
 
+SearchAbout F.cmp.
+
+Lemma integral_correct_bis (depth : nat) (a b : F.type) (i : I.type) :
+  ex_RInt f (T.toR a) (T.toR b) -> 
+  match (F.cmp a b) with | Xlt => true | Xeq => true | _ => false end = true ->
+  I.subset (integral depth a b) i = true -> 
+  contains (I.convert i) (Xreal (RInt f (T.toR a) (T.toR b))).
+Proof.
+intros Hint Hcmp Hsub.
+About subset_contains.
+apply: (subset_contains (I.convert (integral depth a b))).
+apply: I.subset_correct Hsub.
+apply: integral_correct => //.
+move : Hcmp.
+rewrite F.cmp_correct.
+rewrite Fcmp_correct.
+rewrite /Xcmp /T.toR.
+case: (FtoX (F.toF a)) => //.
+intros r.
+case: (FtoX (F.toF b)) => //.
+intros r0.
+case: (Rcompare_spec) => //= H _.
+exact: Rlt_le.
+exact: Req_le.
+move : Hcmp (F.real_correct a).
+rewrite F.cmp_correct.
+rewrite Fcmp_correct.
+case: ( (F.toF a)) => //.
+move : Hcmp (F.real_correct b).
+rewrite F.cmp_correct.
+rewrite Fcmp_correct.
+case: ( (F.toF a)) => //;
+case: ( (F.toF b)) => //.
+Qed.
+
+
 End integral.
 
 End IntervalIntegral.
+Locate eval.
+Locate interval_from_bp.
+Lemma integral_correct_ter prec (depth : nat) (a b : F.type) (i : I.type) formula bounds :
+  ex_RInt (fun x => nth 0 (eval_real formula (x::map IntA.real_from_bp bounds)) R0) (T.toR a) (T.toR b) -> 
+  match (F.cmp a b) with | Xlt => true | Xeq => true | _ => false end = true ->
+  I.subset (integral prec (fun xi => nth 0 (IntA.BndValuator.eval prec formula (xi::map IntA.interval_from_bp bounds)) I.nai) depth a b) i = true -> 
+  contains (I.convert i) (Xreal (RInt (fun x => nth 0 (eval_real formula (x::map IntA.real_from_bp bounds)) R0) (T.toR a) (T.toR b))).
+Proof.
+apply: integral_correct_bis.
+rewrite /toXreal_fun.
+intros xi x Hcontains.
+set toto := (I.convert
+        (nth 0
+           (IntA.BndValuator.eval prec formula
+              (xi :: map IntA.interval_from_bp bounds)) I.nai)).
+(* eapply xreal_to_real. *) apply  (xreal_to_real (fun x => contains toto x) (fun x => contains toto (Xreal x))) => //.
+case: toto => //.
+Search IntA.xreal_from_bp. rewrite /toto.
+Print IntA.real_from_bp.
+Print IntA.xreal_from_bp.
+pose bounds' := IntA.Bproof x xi Hcontains::bounds.
+have -> : (map Xreal (x :: map IntA.real_from_bp bounds)) = map IntA.xreal_from_bp bounds'.
+simpl. congr (_::_).
+rewrite map_map.
+apply: map_ext.
+by case.
+change (xi :: map IntA.interval_from_bp bounds) with (map IntA.interval_from_bp bounds').
+by apply IntA.BndValuator.eval_correct.
+Qed.
 
 End IntegralTactic.
 
@@ -184,6 +253,31 @@ Ltac apply_interval_correct :=
   apply integral_correct => //;
   [proves_interval_extention | proves_RInt | proves_bound_order].
 
+
+Definition reify_var : R.
+exact: 0.
+Qed.
+
+
+
+Ltac get_bounds l :=
+  let rec aux l :=
+    match l with
+    | Datatypes.nil => constr:(@Datatypes.nil IntA.bound_proof)
+    | Datatypes.cons ?x ?l =>
+      let i :=
+        match goal with
+        | _ =>
+          let v := Private.get_float x in
+          constr:(let f := v in IntA.Bproof x (I.bnd f f) (conj (Rle_refl x) (Rle_refl x)))
+        | _ => fail 100 "Atom" x "is neither a floating-point value nor bounded by floating-point values."
+        end in
+      let m := aux l in
+      constr:(Datatypes.cons i m)
+    end in
+  aux l.
+
+
 Ltac integral_tac_test g prec depth :=
 match goal with
 | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
@@ -194,24 +288,82 @@ match goal with
   change (contains (I.convert (I.bnd v w)) (Xreal (RInt f ra rb)));
   apply: (subset_contains (I.convert (integral prec g depth lb ub))) end.
 
-Ltac integral_tac g prec depth :=
-match goal with
-| |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
-  let v := Private.get_float a in
-  let w := Private.get_float c in
-  let lb := Private.get_float ra in
-  let ub := Private.get_float rb in
-  change (contains (I.convert (I.bnd v w)) (Xreal (RInt f ra rb)));
-  apply: (subset_contains (I.convert (integral prec g depth lb ub)));
+Ltac integral_tac prec depth :=
+  match goal with
+    | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
+      let v := Private.get_float a in
+      let w := Private.get_float c in
+      let lb := Private.get_float ra in
+      let ub := Private.get_float rb in
+      let f' := (eval cbv beta in (f reify_var))
+      in 
+      match Private.extract_algorithm f' (reify_var::List.nil) with
+        | (?formul,_::?const) => 
+          let formula := fresh "formula" in
+          pose (formula := formul);
+            let bounds := fresh "bounds" in
+            let toto1 := get_bounds const in 
+            pose (bounds := toto1);
+                          apply (integral_correct_ter prec depth lb ub (I.bnd v w) formula bounds) end  
+           
+  end; [idtac | abstract (vm_cast_no_check (eq_refl true)) | abstract (vm_cast_no_check (eq_refl true)) ].
+  (* apply: (subset_contains (I.convert (integral prec g depth lb ub))); *)
  (* at this point we generate two subgoals: *)
  (*- the first one succeeds by computation if the interval computed by integral *)
  (*     is sharp enough wrt to the user's problem *)
  (*   - the second one is always provable by application of interval_correct *) 
- [interval_inclusion_by_computation | apply_interval_correct]
- | _ => fail 100 "rate" end.
- 
+ (* [interval_inclusion_by_computation | apply_interval_correct] *)
+ (* | _ => fail 100 "rate" end. *)
+
+
+Require Import BigZ.
+Definition prec10 := (10%bigZ) : F.precision.
+
+
+Lemma test_reification  : (0 <= RInt (fun x => x + 2) 0 1 <= 1000/8)%R.
+Proof.
+integral_tac prec10 (0%nat).
+[idtac | abstract (vm_cast_no_check (eq_refl true)) | abstract (vm_cast_no_check (eq_refl true)) ].
+match goal with
+    | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
+      let v := Private.get_float a in
+      let w := Private.get_float c in
+      let lb := Private.get_float ra in
+      let ub := Private.get_float rb in
+apply (integral_correct_ter prec10 0 lb ub (I.bnd v w) formula bounds) end  .
+
+match goal with 
+| |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c =>
+  let f' := (eval cbv beta in (f reify_var))
+  in match Private.extract_algorithm f' (reify_var::List.nil) with
+       | (?formul,_::?const) => 
+         let formula := fresh "formula" in
+         pose (formula := formul);
+           let v := Private.get_float a in
+           let w := Private.get_float c in
+           let lb := Private.get_float ra in
+           let ub := Private.get_float rb in
+           (* change (contains (I.convert (I.bnd v w)) (Xreal (RInt (fun x => nth 0 (eval_real formula (x::consts)) R0) (T.toR lb) (T.toR ub)))); *)
+           let bounds := fresh "bounds" in
+           let toto1 := get_bounds const in 
+           pose bounds := toto1;
+                         apply (integral_correct_ter prec10 0 lb ub (I.bnd v w) formula bounds)
+     end 
+end.
+About IntA.bound_proof.
+
+Print IntA.bound_proof.
+Print Private.A.bound_proof.
+
+apply (integral_correct_ter prec10 0 (F.zero)  (Float 1%bigZ 0%bigZ) (I.bnd F.zero (Float 7%bigZ (-3)%bigZ)) formula bounds).
+
+
+About integral_correct_bis.
+About Private.xreal_to_contains.
 
 (* For tests and benchmarks *)
+Print 3.
+
 Require Import BigZ.
 Definition prec10 := (10%bigZ) : F.precision.
 
@@ -221,13 +373,9 @@ pose g (x : I.type) := x.
 pose prec : F.precision := prec10.
 pose depth : nat := 1%nat. 
 integral_tac g prec depth.
-- intros b x; by case : x.
-  (* - admit. (* sera fourni par la tactique *) *)
-  - admit. (* pour l'instant on laisse à l'utilisateur *)
-Admitted.
-
-
-
+admit.
+admit.
+Qed.
 
 
 Print exp_correct.
