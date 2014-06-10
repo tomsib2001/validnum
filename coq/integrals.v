@@ -323,64 +323,63 @@ Definition prec10 := (10%bigZ) : F.precision.
 Lemma test_reification  : (0 <= RInt (fun x => x + 2) 0 1 <= 1000/8)%R.
 Proof.
 integral_tac prec10 (0%nat).
-[idtac | abstract (vm_cast_no_check (eq_refl true)) | abstract (vm_cast_no_check (eq_refl true)) ].
-match goal with
-    | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
-      let v := Private.get_float a in
-      let w := Private.get_float c in
-      let lb := Private.get_float ra in
-      let ub := Private.get_float rb in
-apply (integral_correct_ter prec10 0 lb ub (I.bnd v w) formula bounds) end  .
+(* [idtac | abstract (vm_cast_no_check (eq_refl true)) | abstract (vm_cast_no_check (eq_refl true)) ]. *)
+(* match goal with *)
+(*     | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c =>  *)
+(*       let v := Private.get_float a in *)
+(*       let w := Private.get_float c in *)
+(*       let lb := Private.get_float ra in *)
+(*       let ub := Private.get_float rb in *)
+(* apply (integral_correct_ter prec10 0 lb ub (I.bnd v w) formula bounds) end  . *)
 
-match goal with 
-| |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c =>
-  let f' := (eval cbv beta in (f reify_var))
-  in match Private.extract_algorithm f' (reify_var::List.nil) with
-       | (?formul,_::?const) => 
-         let formula := fresh "formula" in
-         pose (formula := formul);
-           let v := Private.get_float a in
-           let w := Private.get_float c in
-           let lb := Private.get_float ra in
-           let ub := Private.get_float rb in
-           (* change (contains (I.convert (I.bnd v w)) (Xreal (RInt (fun x => nth 0 (eval_real formula (x::consts)) R0) (T.toR lb) (T.toR ub)))); *)
-           let bounds := fresh "bounds" in
-           let toto1 := get_bounds const in 
-           pose bounds := toto1;
-                         apply (integral_correct_ter prec10 0 lb ub (I.bnd v w) formula bounds)
-     end 
-end.
+(* match goal with  *)
+(* | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => *)
+(*   let f' := (eval cbv beta in (f reify_var)) *)
+(*   in match Private.extract_algorithm f' (reify_var::List.nil) with *)
+(*        | (?formul,_::?const) =>  *)
+(*          let formula := fresh "formula" in *)
+(*          pose (formula := formul); *)
+(*            let v := Private.get_float a in *)
+(*            let w := Private.get_float c in *)
+(*            let lb := Private.get_float ra in *)
+(*            let ub := Private.get_float rb in *)
+(*            (* change (contains (I.convert (I.bnd v w)) (Xreal (RInt (fun x => nth 0 (eval_real formula (x::consts)) R0) (T.toR lb) (T.toR ub)))); *) *)
+(*            let bounds := fresh "bounds" in *)
+(*            let toto1 := get_bounds const in  *)
+(*            pose bounds := toto1; *)
+(*                          apply (integral_correct_ter prec10 0 lb ub (I.bnd v w) formula bounds) *)
+(*      end  *)
+(* end. *)
+simpl.
+admit.
+Qed.
+
 About IntA.bound_proof.
 
 Print IntA.bound_proof.
 Print Private.A.bound_proof.
 
-apply (integral_correct_ter prec10 0 (F.zero)  (Float 1%bigZ 0%bigZ) (I.bnd F.zero (Float 7%bigZ (-3)%bigZ)) formula bounds).
+(* apply (integral_correct_ter prec10 0 (F.zero)  (Float 1%bigZ 0%bigZ) (I.bnd F.zero (Float 7%bigZ (-3)%bigZ)) formula bounds). *)
 
 
 About integral_correct_bis.
 About Private.xreal_to_contains.
 
 (* For tests and benchmarks *)
-Print 3.
+(* Print 3. *)
 
 Require Import BigZ.
-Definition prec10 := (10%bigZ) : F.precision.
+(* Definition prec10 := (10%bigZ) : F.precision. *)
 
 Lemma test (f := fun x : R => x) : (0 <= RInt f 0 1 <= 7/8)%R.
 Proof.
 pose g (x : I.type) := x.
 pose prec : F.precision := prec10.
 pose depth : nat := 1%nat. 
-integral_tac g prec depth.
-admit.
+rewrite /f.
+integral_tac prec depth.
 admit.
 Qed.
-
-
-Print exp_correct.
-About exp_correct.
-SearchAbout I.extension.
 
 
 Lemma extension_comp f g h k : I.extension f g -> I.extension h k -> I.extension (fun x => f ( h x)) (fun x => g ( k x)).
@@ -433,8 +432,8 @@ rewrite /g.
 extension_tac (fun (x : I.type) => exp prec10 (cos prec10 x)).
 rewrite /f /g.
 apply: (extension_comp_xreal Rtrigo_def.exp (FInt.exp prec10) Rtrigo_def.cos (FInt.cos prec10)).
-- exact: exp_correct.
-- exact: cos_correct.
+- exact: FInt.exp_correct.
+- exact: FInt.cos_correct.
 Qed.
 
 
@@ -443,9 +442,9 @@ Proof.
 pose g (x : I.type) := FInt.exp prec10 x.
 pose prec : F.precision := prec10.
 pose depth : nat := 1%nat.
-integral_tac g prec depth.
-- by apply: exp_correct.
-- by admit.
+rewrite /f.
+integral_tac prec depth.
+admit.
 Qed.
 
 (* Definition foo f n a b :=  *)
