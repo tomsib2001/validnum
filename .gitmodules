@@ -1,3 +1,0 @@
-[submodule "coq/coq-interval"]
-	path = coq/coq-interval
-	url = git+ssh://tsibutpi@scm.gforge.inria.fr//gitroot/coq-interval/coq-interval.git
