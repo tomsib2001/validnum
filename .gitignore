@@ -12,4 +12,5 @@
 *.vo
 *.glob
 *.cache
+*.v.d
 #*#
