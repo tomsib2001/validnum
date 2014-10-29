@@ -51,11 +51,13 @@ newton (6., 7.) sReelle s (dS) 10 1e-9;;
 
 
 (* examples for integrals *)
-let iF x = iSin (iPlus (iExp x) x);;
+(* let iF x = iSin (iPlus (iExp x) x);; *)
+let iF x = iMult (iPow x 2) (iMult (iExp (iNeg (iDiv (x) ((2.,2.))))) (iLog x))
 (* the following computation is heavy *)
 
-(* let (u,v) = int_iFun_eps2 0.001 iF (0.,8.);; *)
-(* print_interval (u,v);; *)
+let (u,v) = int_iFun_eps2 0.001 iF (0.,1.);;
+print_interval (u,v);;
+print_string "coucou";;
 
 
 (* examples of specializing an elemFUn to a float -> float function *)
@@ -159,7 +161,7 @@ print_interval i;;
 
 
 (* test of estimateSolCutNonLin *)
-estimateSolCutNonLin 0. 5 3 (thin 0.5) (fun x -> thin (neg 1.,1.)) (fun f -> )
+(* estimateSolCutNonLin 0. 5 3 (thin 0.5) (fun x -> thin (neg 1.,1.)) (fun f -> ) *)
 
 
 (* test of simple enclosure methods *)
@@ -184,10 +186,14 @@ clean(l);;
 
 (* let l = (makeList 0. 1. 1);; *)
 
-(* estimateSolCut 0. 3 0 [1.] [1.] [fun x -> (0.,10.)] (fun x -> x) l;; *)
+estimateSolCut 0. 3 0 [1.] [1.] [fun x -> (0.,10.)] (fun x -> x) l;;
 
 (* examples from taylor.ml *)
 
 let t1 = getTaylorApproxSymbolic foi "x" 4 (Cos (Var "x")) (Var "x0") (Var "x");;
 
 elemFun_to_string string_of_float t1;;
+
+let t2 = getTaylorApproxSymbolic foi "x" 4 (Exp (Var "x")) (Var "x0") (Var "x");;
+
+elemFun_to_string string_of_float t2;;

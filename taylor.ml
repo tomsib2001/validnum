@@ -51,6 +51,7 @@ let rec formalDer int2Const zero one var =
     | Cos f1 -> Neg (mult(formalDer int2Const zero one var  f1, Sin f1))
     | Sin f1 -> mult(formalDer int2Const zero one var f1, Cos f1)
     | Exp f1 -> mult(formalDer int2Const zero one var f1, Exp f1)
+    | Log f1 -> Div(formalDer int2Const zero one var f1, f1)
     | Pow(f1,i) -> mult(Const (int2Const i), mult(formalDer int2Const zero one var  f1,Pow(f1,i-1)))
     | VarFun(f1,k,x) -> let xp = formalDer int2Const zero one var  x in mult(xp,VarFun(f1,k+1,x))
 ;;
@@ -84,6 +85,7 @@ let rec subs x0 x1 = function
   | Cos f1 -> Cos (subs x0 x1 f1)
   | Sin f1 -> Sin (subs x0 x1 f1)
   | Exp f1 -> Exp (subs x0 x1 f1)
+  | Log f1 -> Log (subs x0 x1 f1)
   | Pow(f1,i) -> Pow(subs x0 x1 f1,i)
   | VarFun(s,k,f) -> VarFun(s,k,subs x0 x1 f)
 ;;
@@ -147,7 +149,7 @@ let getTaylorApproxInterval (var:string) k f (t0: float) (ts: intervalle) =
       k f (thin t0) (ts)
   and
       rem = 
-    remainder (* TODO : check type here *)
+    remainder
       (kDer int2Const zero one var)
       (fun f i -> sym2iFunFloat f i)
       (fun x -> (thin x))
@@ -206,7 +208,7 @@ let iCosBis x = let (a,b) = getTaylorApproxInterval "x" 8 (Cos (Var "x")) (0.) x
 
 let rec isConstantFunction f = 
   let id = fun x -> x in
-  makeF (fun x -> true) (fun x -> false) (&&) (&&) id (&&) (&&) id id id (fun (x,y) -> x) (fun f i x -> false) f ();;
+  makeF (fun x -> true) (fun x -> false) (&&) (&&) id (&&) (&&) id id id id (fun (x,y) -> x) (fun f i x -> false) f ();;
 
 isConstantFunction f;;
 isConstantFunction (subs (Var "x") (Const 3.) f);;
@@ -309,7 +311,7 @@ let high_order_enclosure_final f var phi order t0 x0 t1 (valinit : intervalle) =
  in
   iPlus res error;;
 
-high_order_enclosure "f" "x" (Neg(Mult(Var "t",Var "x"))) 10 0. (0.5,0.5) 0.1 (neg 200.,200.);;
+high_order_enclosure "f" "x" (Neg(Mult(Var "t",Var "x"))) 10 0. (neg 1.,1.) 0.5 (neg 20.,20.);;
 
 let estimateSolCutTaylor (t0 : float)  order  (x0: intervalle) var f phi (valinit : intervalle) l =
   let rec aux (x:intervalle) (t1:float) = function

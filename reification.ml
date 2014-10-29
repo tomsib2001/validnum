@@ -12,6 +12,7 @@ type 'a elemFun =
   | Sin of 'a elemFun
   | Cos of 'a elemFun
   | Exp of 'a elemFun
+  | Log of 'a elemFun
   | VarFun of string*int*'a elemFun (* f(x) *)
 ;;
 
@@ -27,11 +28,12 @@ let rec elemFun_to_string soc = function
   | Sin x -> " sin ("^(elemFun_to_string soc x)^")"
   | Cos x -> " cos ("^(elemFun_to_string soc x)^")"
   | Exp x -> " exp ("^(elemFun_to_string soc x)^")"
+  | Log x -> " log ("^(elemFun_to_string soc x)^")"
   | VarFun(f,k,x) -> f^"^"^(string_of_int k)^"("^(elemFun_to_string soc x)^")"
   (* | _ -> "not implemented in elemFun_to_string";; (\* for future additions*\) *)
 
 (* a generic function which interprets a symbolic elementary function into a desired model: it could be float -> float functions, interval -> interval functions, symbolic functions again (this would be desirable for derivation or taylor models) *)
-let makeF const var plus mult neg sub div cos sin exp pow varfun f = 
+let makeF const var plus mult neg sub div cos sin exp log pow varfun f = 
   let rec aux = function
     | Const c -> (fun (x) -> const c)
     | Var s -> (fun x -> var x)
@@ -48,6 +50,7 @@ let makeF const var plus mult neg sub div cos sin exp pow varfun f =
     | Cos  f1 -> let if1 = aux f1 in (fun x -> cos (if1 x))
     | Sin  f1 -> let if1 = aux f1 in (fun x -> sin (if1 x))
     | Exp f1 -> let if1 = aux f1 in (fun x -> exp (if1 x))
+    | Log f1 -> let if1 = aux f1 in (fun x -> log (if1 x))
     | VarFun(f,k,f1) -> let if1 = aux f1 in (fun x -> varfun f k (if1 x))
   in aux f;;
 
@@ -57,17 +60,17 @@ let iVar x = x
 let iVarFun f k x = failwith ("trying to apply a function variable ("^f^") to a concrete interval : "^(interval_to_string x));;
 
 (* when the original function was of type float elemFun: *)
-let sym2iFunFloat = makeF thin iVar iPlus iMult iNeg iSub iDiv iCos iSin iExp (fun (x,y) -> iPow x y) iVarFun;;
+let sym2iFunFloat = makeF thin iVar iPlus iMult iNeg iSub iDiv iCos iSin iExp iLog (fun (x,y) -> iPow x y) iVarFun;;
 
 (* or more generally when it was of type 'a elemFun *)
-let sym2iFunGen (aToIntervalle : 'a -> intervalle) = makeF aToIntervalle iVar iPlus iMult iNeg iSub iDiv iCos iSin iExp (fun (x,y) -> iPow x y) iVarFun;;
+let sym2iFunGen (aToIntervalle : 'a -> intervalle) = makeF aToIntervalle iVar iPlus iMult iNeg iSub iDiv iCos iSin iExp iLog (fun (x,y) -> iPow x y) iVarFun;;
 
 (* we can specialize to float -> float functions: *)
 let const c = c;;
 let var x = x;;
 let floatVarFun f k x = raise Not_found;;
 
-let sym2floatFun = makeF const var (+.) (fun x y -> x *. y ) (fun x -> ~-.x) (-.) (/.) cos sin exp (fun (x,y) -> pow x y) floatVarFun;;
+let sym2floatFun = makeF const var (+.) (fun x y -> x *. y ) (fun x -> ~-.x) (-.) (/.) cos sin exp log  (fun (x,y) -> pow x y) floatVarFun;;
 
 
 (* and now we specialize for automatic differentiation *)
@@ -82,10 +85,11 @@ let subAD a b = plusAD a (negAD b);;
 let cosAD (a,b) = (iCos a, iNeg (iMult b (iSin a)));;
 let sinAD (a,b) = (iSin a, iMult b (iCos a));;
 let expAD (a,b) = (iExp a, iMult b (iExp a));;
+let logAD (a,b) = (iLog a, iDiv b a);;
 let powAD ((a,b),n) = (iPow a n,iMult (thin (foi n)) (iMult b (iPow a (n-1))));;
 let varFunAD f k (a,b) = raise Not_found;;
 
 (* symbolic functions to automatic differentiation of order 1 functions *)
-let sym2ad1= makeF constAD varAD plusAD multAD negAD subAD divAD cosAD sinAD expAD powAD varFunAD;;
+let sym2ad1= makeF constAD varAD plusAD multAD negAD subAD divAD cosAD sinAD expAD logAD powAD varFunAD;;
 
 

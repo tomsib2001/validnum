@@ -140,6 +140,8 @@ let monfun2iFun (croiss : bool) (f : float -> float) (a,b) = if croiss then (rd(
 (* this allows us to define the exponential function: *)
 let iExp = monfun2iFun true exp;;
 
+let iLog = monfun2iFun true log;;
+
 (* float and interval power functions *)
 
 let rec pow x = function
