@@ -54,8 +54,6 @@ Section OrderOne.
 
 Variables (a b : F.type).
 
-About RInt.
-
 (* f is integrable on [a, b]*)
 Hypothesis Hintegrable : ex_RInt f (T.toR a) (T.toR b).
 
@@ -150,7 +148,6 @@ Lemma integral_correct_bis (depth : nat) (a b : F.type) (i : I.type) :
   contains (I.convert i) (Xreal (RInt f (T.toR a) (T.toR b))).
 Proof.
 intros Hint Hcmp Hsub.
-About subset_contains.
 apply: (subset_contains (I.convert (integral depth a b))).
 apply: I.subset_correct Hsub.
 apply: integral_correct => //.
@@ -199,9 +196,9 @@ set toto := (I.convert
               (xi :: map IntA.interval_from_bp bounds)) I.nai)).
 apply  (xreal_to_real (fun x => contains toto x) (fun x => contains toto (Xreal x))) => //.
 case: toto => //.
-Search IntA.xreal_from_bp. rewrite /toto.
-Print IntA.real_from_bp.
-Print IntA.xreal_from_bp.
+rewrite /toto.
+(* Print IntA.real_from_bp. *)
+(* Print IntA.xreal_from_bp. *)
 pose bounds' := IntA.Bproof x xi Hcontains::bounds.
 have -> : (map Xreal (x :: map IntA.real_from_bp bounds)) = map IntA.xreal_from_bp bounds'.
 simpl. congr (_::_).
@@ -220,7 +217,7 @@ Require Import Interval_generic_ops.
 Require Import Interval_transcend.
 Require Import Interval_bigint_carrier.
 Require Import Interval_specific_ops.
-Print BigIntRadix2.
+(* Print BigIntRadix2. *)
 
 Module F := SpecificFloat BigIntRadix2.
 (* Module F :=  GenericFloat Radix2. *)
@@ -353,8 +350,6 @@ integral_tac prec10 (0%nat).
 simpl.
 admit.
 Qed.
-
-About IntA.bound_proof.
 
 (* have toto := (notNaiInt prec10 formula bounds F.zero (Float 1%bigZ 0%bigZ)). *)
 (* have toto1 :  (forall n : nat, *)
@@ -548,7 +543,7 @@ Definition zero := F.fromZ 0%Z.
 
 Definition P (x : R) := 1 + x + x*x / 2.
 
-Print F.
+(* Print F. *)
 
 Import Private.
 
@@ -654,9 +649,9 @@ Module Import TMF := TaylorModelFloat F PolF I PolI PolX Link Bnd.
 Definition tm_exp_lb_ub := (TMF.TM.TM_exp prec (thin zero) (I.bnd lb ub) 10).
 Definition exp_poly := (TM.RPA.approx tm_exp_lb_ub) .
 Definition reste_fin :=  (TM.RPA.error tm_exp_lb_ub) .
-SearchAbout i_poly.
-About i_eval.
-About PolI.teval.
+(* SearchAbout i_poly. *)
+(* About i_eval. *)
+(* About PolI.teval. *)
 
 Eval vm_compute in (i_eval prec exp_poly (I.bnd lb ub)).
 (* In Python: *)
@@ -665,7 +660,7 @@ Eval vm_compute in (i_eval prec exp_poly (I.bnd lb ub)).
 
 (* Print TMF. *)
 (* Print TM. *)
-About TM.TM_integral.
+(* About TM.TM_integral. *)
 Definition X0 := thin zero. 
 Definition X := I.bnd lb ub. (* [0,1], bientot périmé *)
 Definition exp_integrated := TM.TM_integral prec X0 X (TM.TM_exp prec X0 X 3).
