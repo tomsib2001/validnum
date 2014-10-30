@@ -2,3 +2,6 @@ extra_coquelicot.v
 extra_floats.v
 extra_interval.v
 integrals.v
+
+
+-R $(COQINTLIB)/coq-interval/src Interval

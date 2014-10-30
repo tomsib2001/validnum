@@ -13,4 +13,5 @@
 *.glob
 *.cache
 *.v.d
+config.sh
 #*#
