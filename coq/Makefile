@@ -80,7 +80,8 @@ endif
 #                    #
 ######################
 
-VFILES:=integrals.v\
+VFILES:=taylorModelExperiments.v\
+  integrals.v\
   extra_interval.v\
   extra_floats.v\
   extra_coquelicot.v
