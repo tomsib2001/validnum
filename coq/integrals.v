@@ -2,7 +2,6 @@ Require Import List.
 Require Import Reals.
 Require Import Fourier.
 Require Import Interval_missing.
-(* Require Import ZArith. *) (* seems unnecessary?*)
 Require Import Fcore.
 Require Import Interval_xreal.
 Require Import Interval_definitions.
@@ -144,8 +143,6 @@ suff hm : F.real (I.midpoint (I.bnd a b)) by apply: I.add_correct; apply: Hk.
   exists (I.convert_bound a); apply: contains_convert_bnd_l => //; exact/F_realP.
 Qed.
 
-SearchAbout F.cmp.
-
 Lemma integral_correct_bis (depth : nat) (a b : F.type) (i : I.type) :
   ex_RInt f (T.toR a) (T.toR b) -> 
   match (F.cmp a b) with | Xlt => true | Xeq => true | _ => false end = true ->
@@ -179,12 +176,106 @@ case: ( (F.toF a)) => //;
 case: ( (F.toF b)) => //.
 Qed.
 
-
 End integral.
 
 End IntervalIntegral.
-Locate eval.
-Locate interval_from_bp.
+
+About eval_inductive_prop_fun.
+About ex_RInt.
+Print ex_RInt.
+
+Definition toReal_Xfun f := (fun x => match f(Xreal x) with | Xreal r => r
+                                     | Xnan => R0 end).
+
+Definition ex_RInt_Xreal (f : ExtendedR -> ExtendedR) (a b : R) := let g := toReal_Xfun f in(* (fun x => match f(Xreal x) with | Xreal r => r *)
+                                     (* | Xnan => R0 end) *)  
+ex_RInt g a b.
+(* is_RInt (fun x => match f(Xreal x) with | Xreal r => r *)
+(*                                      | Xnan => R0 end)  a b If. *)
+
+
+Lemma UnaryNai : forall (o : unary_op) pow b0,
+ unary (IntA.BndValuator.operations pow) o b0 <> I.nai ->
+ b0 <> I.nai.
+apply: unary_op_rec; intros pow;
+try by case => /=.
+intros prec0 i => /=.
+induction pow.
+- by rewrite /power_int; case: i => //=.
+- rewrite /power_int /=; induction p.
+    +  rewrite /I.power_pos; move: IHp; by case : i.
+    +  rewrite /I.power_pos; move: IHp; by case : i.
+    +  rewrite /I.power_pos; by case : i.
+- by rewrite /power_int; case: i => //=.
+Qed.
+
+Lemma InvEpsilon a0 a b :
+  (forall x0, T.toR a <= x0 <= T.toR b ->  unary ext_operations Inv (a0 (Xreal x0)) <> Xnan) -> 
+exists epsilon, epsilon > 0 /\ forall x0, T.toR a <= x0 <= T.toR b -> match a0 (Xreal x0) with Xreal r0 => Rabs r0 >= epsilon | Xnan => True end.
+Proof.
+Admitted.
+
+
+
+Lemma IntOpUnary a b a0 o : ex_RInt_Xreal a0 (T.toR a) (T.toR b) ->
+(forall x0, T.toR a <= x0 <= T.toR b ->  unary ext_operations o (a0 (Xreal x0)) <> Xnan) -> 
+  ex_RInt_Xreal (fun x : ExtendedR => unary ext_operations o (a0 x))
+     (T.toR a) (T.toR b).
+Proof.
+intros HInta0.
+case: o => z /=; rewrite /ex_RInt_Xreal .
+apply: (ex_RInt_ext (fun x => (-1) * ((toReal_Xfun a0) x))).
+intros x _; rewrite /toReal_Xfun; case: (a0 (Xreal x)) => //=; first by ring.
+ intros r; ring.
+apply: ex_RInt_scal; exact: HInta0.
+admit.
+admit.
+admit.
+admit.
+admit.
+admit.
+admit.
+admit.
+admit.
+(* intros HnXnan. *)
+admit.
+admit.
+Qed.
+
+(* the following statement is false at least because of the forall n: it becomes fatally false when n > length of the list *)
+Lemma notNaiInt :
+  forall prec formula bounds a b,
+    (forall n, nth n (IntA.BndValuator.eval prec formula ((I.bnd a b)::map IntA.interval_from_bp bounds)) I.nai <> I.nai) -> 
+    ex_RInt_Xreal (fun x => nth 0 (eval_ext formula (x::map IntA.xreal_from_bp bounds)) Xnan) (T.toR a) (T.toR b).
+Proof.
+intros prec formula bounds a b Hnnai.
+unfold eval_real, eval_generic.
+About eval_inductive_prop_fun.
+apply: (eval_inductive_prop_fun _ _ (fun f yi => (yi <> I.nai) -> ex_RInt_Xreal f (T.toR a) (T.toR b)) Xnan I.nai ext_operations (IntA.BndValuator.operations prec)).
+intros a1 a2 Ha12 b0 Hb0.
+intros Hbnai.
+rewrite /ex_RInt_Xreal.
+have HIf :=  (Hb0 Hbnai).
+apply (ex_RInt_ext (toReal_Xfun a1)) => //.
+intros x _; by rewrite /toReal_Xfun; rewrite Ha12.
+by [].
+intros o a0 b0 H1 H2.
+have Ha0Int := (H1 (UnaryNai o prec b0 H2)).
+apply: IntOpUnary => // .
+intros x0 Hx0 Habs.
+apply: H2.
+rewrite /I.nai.
+Admitted.
+(* (* have -> :  I.nai = Interval_interval.Inan by []. *) *)
+(* About xreal_ssr_compat.contains_Xnan. *)
+(* Check (@xreal_ssr_compat.contains_Xnan  (unary (IntA.BndValuator.operations prec) o b0)) . *)
+
+(* case => a0 i Hinnai HNegnai. *)
+(* SearchAbout Neg. *)
+
+
+
+(* this lemma is intended for the tactic, so that it allows for an easy proof of  *)
 Lemma integral_correct_ter prec (depth : nat) (a b : F.type) (i : I.type) formula bounds :
   ex_RInt (fun x => nth 0 (eval_real formula (x::map IntA.real_from_bp bounds)) R0) (T.toR a) (T.toR b) -> 
   match (F.cmp a b) with | Xlt => true | Xeq => true | _ => false end = true ->
@@ -198,7 +289,7 @@ set toto := (I.convert
         (nth 0
            (IntA.BndValuator.eval prec formula
               (xi :: map IntA.interval_from_bp bounds)) I.nai)).
-(* eapply xreal_to_real. *) apply  (xreal_to_real (fun x => contains toto x) (fun x => contains toto (Xreal x))) => //.
+apply  (xreal_to_real (fun x => contains toto x) (fun x => contains toto (Xreal x))) => //.
 case: toto => //.
 Search IntA.xreal_from_bp. rewrite /toto.
 Print IntA.real_from_bp.
@@ -215,11 +306,14 @@ Qed.
 
 End IntegralTactic.
 
+
 Require Import Interval_tactic.
 Require Import Interval_generic_ops.
 Require Import Interval_transcend.
 Require Import Interval_bigint_carrier.
 Require Import Interval_specific_ops.
+Print BigIntRadix2.
+
 Module F := SpecificFloat BigIntRadix2.
 (* Module F :=  GenericFloat Radix2. *)
 (* Module FInt := FloatIntervalFull F. *)
@@ -253,12 +347,9 @@ Ltac apply_interval_correct :=
 (* WARNING : do not use "apply:" instead of "apply" : it computes too much*)
   apply integral_correct => //;
   [proves_interval_extention | proves_RInt | proves_bound_order].
-
-
 Definition reify_var : R.
 exact: 0.
 Qed.
-
 
 
 Ltac get_bounds l :=
@@ -305,10 +396,9 @@ Ltac integral_tac prec depth :=
             let bounds := fresh "bounds" in
             let toto1 := get_bounds const in 
             pose (bounds := toto1);
-                          apply (integral_correct_ter prec depth lb ub (I.bnd v w) formula bounds) end  
+                          apply (integral_correct_ter prec depth lb ub (I.bnd v w) formula bounds) end
            
-  end; [idtac | abstract (vm_cast_no_check (eq_refl true)) | abstract (vm_cast_no_check (eq_refl true)) ].
-  (* apply: (subset_contains (I.convert (integral prec g depth lb ub))); *)
+  end; [rewrite /=; idtac | abstract (vm_cast_no_check (eq_refl true)) | abstract (vm_cast_no_check (eq_refl true)) ].
  (* at this point we generate two subgoals: *)
  (*- the first one succeeds by computation if the interval computed by integral *)
  (*     is sharp enough wrt to the user's problem *)
@@ -324,6 +414,7 @@ Definition prec10 := (10%bigZ) : F.precision.
 Lemma test_reification  : (0 <= RInt (fun x => x + 2) 0 1 <= 1000/8)%R.
 Proof.
 integral_tac prec10 (0%nat).
+
 (* [idtac | abstract (vm_cast_no_check (eq_refl true)) | abstract (vm_cast_no_check (eq_refl true)) ]. *)
 (* match goal with *)
 (*     | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c =>  *)
@@ -357,14 +448,34 @@ Qed.
 
 About IntA.bound_proof.
 
-Print IntA.bound_proof.
-Print Private.A.bound_proof.
+(* have toto := (notNaiInt prec10 formula bounds F.zero (Float 1%bigZ 0%bigZ)). *)
+(* have toto1 :  (forall n : nat, *)
+(*           nth n *)
+(*             (IntA.BndValuator.eval prec10 formula *)
+(*                (I.bnd F.zero (Float 1%bigZ 0%bigZ) *)
+(*                 :: map IntA.interval_from_bp bounds)) I.nai <> I.nai). *)
+(* intros n. *)
+(* simpl. *)
+(* do 4 (case: n => [|n]//) => //. (* it's false.. x*) *)
+(* About notNaiInt. *)
+(* Admitted. *)
+
+Locate exp.
+
+Notation exp := Rtrigo_def.exp.
+Notation cos := Rtrigo_def.cos.
+
+Definition prec30 := (30%bigZ) : F.precision.
 
 (* apply (integral_correct_ter prec10 0 (F.zero)  (Float 1%bigZ 0%bigZ) (I.bnd F.zero (Float 7%bigZ (-3)%bigZ)) formula bounds). *)
 
+Lemma test  : 
+(0<= RInt (fun x => (x + 1 )*(cos x)) 0 1<=2).
+Proof.
+integral_tac prec30 (11%nat).
+admit.
+Qed.
 
-About integral_correct_bis.
-About Private.xreal_to_contains.
 
 (* For tests and benchmarks *)
 (* Print 3. *)
@@ -372,15 +483,70 @@ About Private.xreal_to_contains.
 Require Import BigZ.
 (* Definition prec10 := (10%bigZ) : F.precision. *)
 
-Lemma test (f := fun x : R => x) : (0 <= RInt f 0 1 <= 7/8)%R.
+(* Lemma test (f := fun x : R => x) : (0 <= RInt f 0 1 <= 7/8)%R. *)
+(* Proof. *)
+(* pose g (x : I.type) := x. *)
+(* pose prec : F.precision := prec10. *)
+(* pose depth : nat := 1%nat.  *)
+(* rewrite /f. *)
+(* integral_tac prec depth. *)
+(* admit. *)
+(* Qed. *)
+
+
+
+
+(* Lemma test : (0 <= RInt (fun x : R => x + 1) 0 1 <= 23/8)%R. *)
+(* Proof. *)
+(* integral_tac prec10 (0%nat). *)
+(* admit. *)
+(* Qed. *)
+
+
+
+Lemma testSinExp : (-200 <= RInt (fun x => Rtrigo_def.sin ((Rtrigo_def.exp x) + x)) 0 8 <= 200).
 Proof.
-pose g (x : I.type) := x.
-pose prec : F.precision := prec10.
-pose depth : nat := 1%nat. 
-rewrite /f.
-integral_tac prec depth.
-admit.
-Qed.
+integral_tac prec10 (5%nat).
+Admitted.
+
+(* let depth := constr:(15%nat) in *)
+(*   match goal with *)
+(*     | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c =>  *)
+(*       let v := Private.get_float a in *)
+(*       let w := Private.get_float c in *)
+(*       let lb := Private.get_float ra in *)
+(*       let ub := Private.get_float rb in *)
+(*       let f' := (eval cbv beta in (f reify_var)) in *)
+(*       pose f'1 := f'; *)
+(*       pose lb1 := lb; *)
+(*       pose ub1 := ub; *)
+(*       pose v1 := v; *)
+(*       pose w1 :=w; *)
+(*       pose depth1 := depth; *)
+(*       match Private.extract_algorithm f' (reify_var::List.nil) with *)
+(*         | (?formul,_::?const) =>  *)
+(*           let formula := fresh "formula" in *)
+(*           pose (formula := formul); *)
+(*             let bounds := fresh "bounds" in *)
+(*             let toto1 := get_bounds const in  *)
+(*             pose (bounds := toto1) end *)
+(* end. *)
+(* Eval vm_compute in (integral prec30 (fun x => FInt.sin prec10 (FInt.add prec10 (FInt.exp prec10 x) x)) 10 lb1 ub1). *)
+
+(* apply (integral_correct_ter prec10 depth1 lb1 ub1 (I.bnd v1 w1) formula bounds). *)
+(* admit. *)
+(* abstract (vm_cast_no_check (eq_refl true)). *)
+(* vm_compute. *)
+(* abstract (vm_cast_no_check (eq_refl true)). *)
+
+(* [idtac | abstract (vm_cast_no_check (eq_refl true)) | abstract (vm_cast_no_check (eq_refl true)) ]. *)
+
+(* integral_tac prec10 (10%nat). *)
+
+(* Print exp_correct. *)
+(* About exp_correct. *)
+(* SearchAbout I.extension. *)
+
 
 
 Lemma extension_comp f g h k : I.extension f g -> I.extension h k -> I.extension (fun x => f ( h x)) (fun x => g ( k x)).
@@ -427,15 +593,15 @@ end.
 
 Lemma test_extension : I.extension (toXreal_fun f) g.
 Proof.
-
 rewrite /g.
-
-extension_tac (fun (x : I.type) => exp prec10 (cos prec10 x)).
-rewrite /f /g.
-apply: (extension_comp_xreal Rtrigo_def.exp (FInt.exp prec10) Rtrigo_def.cos (FInt.cos prec10)).
-- exact: FInt.exp_correct.
-- exact: FInt.cos_correct.
+(* extension_tac (fun (x : I.type) => exp prec10 (cos prec10 x)). *)
+(* rewrite /f /g. *)
+(* apply: (extension_comp_xreal Rtrigo_def.exp (FInt.exp prec10) Rtrigo_def.cos (FInt.cos prec10)). *)
+(* - exact: FInt.exp_correct. *)
+(* - exact: FInt.cos_correct. *)
+admit.
 Qed.
+
 
 
 Lemma test2 (f := fun x : R => Rtrigo_def.exp x) : (0 <= RInt f 0 1 <= 23/8)%R.
@@ -478,7 +644,7 @@ Print F.
 
 Import Private.
 
-Definition prec30 := (30%bigZ) : F.precision.
+(* Definition prec30 := (30%bigZ) : F.precision. *)
 Definition prec := prec30.
 
 
@@ -613,7 +779,7 @@ Definition phi_to_integrate := TM.TM_mul prec (TM.TM_var prec X0 X order) comp_r
 Definition initial_guess_integrated := TM.TM_integral prec X0 X (phi_to_integrate X0 X order).
 Eval vm_compute in TM.RPA.approx initial_guess_integrated.
 
-Lemma test3 : I.subset 
+Lemma test4 : I.subset 
                 ((IP_horner_n ) order (I.bnd lb ub) ) 
                 (I.add prec 
                        (thin lb) 
@@ -653,7 +819,7 @@ Time Eval vm_compute in integral (prec10) (FInt.exp prec10) 10 F.zero (F.fromZ 1
 (* Finished transaction in 8. secs (8.400525u,0.004s)*)
 
 
-Definition prec30 := (30%bigZ) : F.precision.
+(* Definition prec30 := (30%bigZ) : F.precision. *)
 
 Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 12 F.zero (F.fromZ 1).
 (* Ibnd (Float F.radix false 922382922 (-29)) *)
@@ -661,7 +827,7 @@ Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 12 F.zero (F.fromZ 1
 (*      : f_interval F.type *)
 (* Finished transaction in 119. secs (118.387399u,0.008001s) *)
 
-Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 15 F.zero (F.fromZ 1).
+(* Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 15 F.zero (F.fromZ 1). *)
 (* Ibnd (Float F.radix false 922481451 (-29)) *)
 (*          (Float F.radix false 922509615 (-29)) *)
 (*      : f_interval F.type *)
@@ -689,6 +855,24 @@ Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 10 F.zero (F.fromZ 1
 (* [1.7174429520964622,1.7191209774464369] *)
 (*Finished transaction in 28. secs (28.685793u,0.060004s) *)
 
+Definition prec64 := (100%bigZ) : F.precision.
+Time Eval vm_compute in integral (prec64) (FInt.exp prec64) 3 F.zero (F.fromZ 1).
+(*      = Ibnd (Float 1022440057055222484579125177733%bigZ (-99)%bigZ) *)
+(*          (Float 1158576369005682997163092575753%bigZ (-99)%bigZ) *)
+(*      : f_interval F.type *)
+(* Finished transaction in 0. secs (0.036002u,0.s) *)
+
+Time Eval vm_compute in integral (prec64) (FInt.exp prec64) 6 F.zero (F.fromZ 1).
+(*     = Ibnd (Float 1080604133619477846151951543090%bigZ (-99)%bigZ) *)
+(*          (Float 1097621172613285410224947467848%bigZ (-99)%bigZ) *)
+(*      : f_interval F.type *)
+(* Finished transaction in 0. secs (0.284018u,0.s) *)
+
+Time Eval vm_compute in integral (prec64) (FInt.exp prec64) 9 F.zero (F.fromZ 1).
+(*      = Ibnd (Float 1088027276879093749447539091601%bigZ (-99)%bigZ) *)
+(*          (Float 1090154406753319694956663582203%bigZ (-99)%bigZ) *)
+(*      : f_interval F.type *)
+(* Finished transaction in 2. secs (2.168135u,0.004s) *)
 
 Definition prec100 := (100%bigZ) : F.precision.
 
@@ -696,6 +880,7 @@ Time Eval vm_compute in integral (prec100) (FInt.exp prec100) 3 F.zero (F.fromZ 
 (* Ibnd (Float F.radix false 1022440057055222484579125177733 (-99)) *)
 (*          (Float F.radix false 1158576369005682997163092575753 (-99)) *)
 (*      : f_interval F.type *)
+
 (* [1.6131259778856115,1.827911206442992]  *)
 (* Finished transaction in 1. secs (1.584099u,0.s) *)
 
