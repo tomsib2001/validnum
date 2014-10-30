@@ -3,6 +3,6 @@ extra_floats.v
 extra_interval.v
 integrals.v
 taylorModelExperiments.v
-
+benchmarksIntegralTac.v
 
 -R $(COQINTLIB)/coq-interval/src Interval
