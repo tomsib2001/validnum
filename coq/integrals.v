@@ -86,7 +86,6 @@ case: (Rle_lt_or_eq_dec _ _ Hleab) => [Hleab1 | Heqab]; last first.
     rewrite -elu; apply: HiFIntExt;  move/F_realP: ha<-.
     by apply: contains_convert_bnd_l.
   + have -> : Xreal Iab = Xmul (Xreal (Iab / (rb - ra))) (Xreal (rb - ra)).
-    (* admit. *)
        rewrite xreal_ssr_compat.Xmul_Xreal; congr Xreal; field.
        by apply: Rminus_eq_contra; apply: Rlt_dichotomy_converse; right.
     apply: I.mul_correct; last first.
@@ -316,9 +315,9 @@ Require Import BigZ.
 Definition prec10 := (10%bigZ) : F.precision.
 
 
-Lemma test_reification  : (0 <= RInt (fun x => x + 2) 0 1 <= 1000/8)%R.
-Proof.
-integral_tac prec10 (0%nat).
+(* Lemma test_reification  : (0 <= RInt (fun x => x + 2) 0 1 <= 1000/8)%R. *)
+(* Proof. *)
+(* integral_tac prec10 (0%nat). *)
 
 (* [idtac | abstract (vm_cast_no_check (eq_refl true)) | abstract (vm_cast_no_check (eq_refl true)) ]. *)
 (* match goal with *)
@@ -347,9 +346,9 @@ integral_tac prec10 (0%nat).
 (*                          apply (integral_correct_ter prec10 0 lb ub (I.bnd v w) formula bounds) *)
 (*      end  *)
 (* end. *)
-simpl.
-admit.
-Qed.
+(* simpl. *)
+(* admit. *)
+(* Qed. *)
 
 (* have toto := (notNaiInt prec10 formula bounds F.zero (Float 1%bigZ 0%bigZ)). *)
 (* have toto1 :  (forall n : nat, *)
@@ -363,8 +362,6 @@ Qed.
 (* About notNaiInt. *)
 (* Admitted. *)
 
-Locate exp.
-
 Notation exp := Rtrigo_def.exp.
 Notation cos := Rtrigo_def.cos.
 
@@ -372,12 +369,12 @@ Definition prec30 := (30%bigZ) : F.precision.
 
 (* apply (integral_correct_ter prec10 0 (F.zero)  (Float 1%bigZ 0%bigZ) (I.bnd F.zero (Float 7%bigZ (-3)%bigZ)) formula bounds). *)
 
-Lemma test  : 
-(0<= RInt (fun x => (x + 1 )*(cos x)) 0 1<=2).
-Proof.
-integral_tac prec30 (11%nat).
-admit.
-Qed.
+(* Lemma test  : *)
+(* (0<= RInt (fun x => (x + 1 )*(cos x)) 0 1<=2). *)
+(* Proof. *)
+(* integral_tac prec30 (11%nat). *)
+(* admit. *)
+(* Qed. *)
 
 
 (* For tests and benchmarks *)
@@ -407,10 +404,10 @@ Require Import BigZ.
 
 
 
-Lemma testSinExp : (-200 <= RInt (fun x => Rtrigo_def.sin ((Rtrigo_def.exp x) + x)) 0 8 <= 200).
-Proof.
-integral_tac prec10 (5%nat).
-Admitted.
+(* Lemma testSinExp : (-200 <= RInt (fun x => Rtrigo_def.sin ((Rtrigo_def.exp x) + x)) 0 8 <= 200). *)
+(* Proof. *)
+(* integral_tac prec10 (5%nat). *)
+(* Admitted. *)
 
 (* let depth := constr:(15%nat) in *)
 (*   match goal with *)
@@ -494,28 +491,28 @@ Ltac extension_tac t := match t with
 end.
 
 
-Lemma test_extension : I.extension (toXreal_fun f) g.
-Proof.
-rewrite /g.
-(* extension_tac (fun (x : I.type) => exp prec10 (cos prec10 x)). *)
-(* rewrite /f /g. *)
-(* apply: (extension_comp_xreal Rtrigo_def.exp (FInt.exp prec10) Rtrigo_def.cos (FInt.cos prec10)). *)
-(* - exact: FInt.exp_correct. *)
-(* - exact: FInt.cos_correct. *)
-admit.
-Qed.
+(* Lemma test_extension : I.extension (toXreal_fun f) g. *)
+(* Proof. *)
+(* rewrite /g. *)
+(* (* extension_tac (fun (x : I.type) => exp prec10 (cos prec10 x)). *) *)
+(* (* rewrite /f /g. *) *)
+(* (* apply: (extension_comp_xreal Rtrigo_def.exp (FInt.exp prec10) Rtrigo_def.cos (FInt.cos prec10)). *) *)
+(* (* - exact: FInt.exp_correct. *) *)
+(* (* - exact: FInt.cos_correct. *) *)
+(* admit. *)
+(* Qed. *)
 
 
 
-Lemma test2 (f := fun x : R => Rtrigo_def.exp x) : (0 <= RInt f 0 1 <= 23/8)%R.
-Proof.
-pose g (x : I.type) := FInt.exp prec10 x.
-pose prec : F.precision := prec10.
-pose depth : nat := 1%nat.
-rewrite /f.
-integral_tac prec depth.
-admit.
-Qed.
+(* Lemma test2 (f := fun x : R => Rtrigo_def.exp x) : (0 <= RInt f 0 1 <= 23/8)%R. *)
+(* Proof. *)
+(* pose g (x : I.type) := FInt.exp prec10 x. *)
+(* pose prec : F.precision := prec10. *)
+(* pose depth : nat := 1%nat. *)
+(* rewrite /f. *)
+(* integral_tac prec depth. *)
+(* admit. *)
+(* Qed. *)
 
 Module TestExtrasFloats := ExtraFloatInterval F.
 
@@ -692,6 +689,7 @@ Lemma test4 : I.subset
 (* Eval vm_compute in s1. *)
 (* Eval vm_compute in s2. *)
 vm_compute.
+Admitted.
  
 (* Lemma test4 (f := fun x : R => x * x * Rtrigo_def.exp ( - (x / 2)) * Rtrigo_def.log x) : (0 <= RInt f 0 1 <= 23/8)%R. *)
 
@@ -704,103 +702,6 @@ vm_compute.
 
 (* Time Eval vm_compute in (foo (FInt.exp prec10) 10 F.zero (F.fromZ 1)). *)
 
-Time Eval vm_compute in integral (prec10) (FInt.exp prec10) 10 F.zero (F.fromZ 1).
-
-Time Eval vm_compute in integral (prec10) (FInt.exp prec10) 3 F.zero (F.fromZ 1).
-(* Ibnd (Float F.radix false 824 (-9)) (Float F.radix false 938 (-9)) *)
-(* [1.609375,1.83203125]*)
-(* Finished transaction in 0. secs (0.064004u,0.s) *)
-
-Time Eval vm_compute in integral (prec10) (FInt.exp prec10) 6 F.zero (F.fromZ 1).
-(*  Ibnd (Float F.radix false 870 (-9)) (Float F.radix false 890 (-9)) *)
-(* [1.69921875,1.73828125]*)
-(* Finished transaction in 1. secs (0.552034u,0.s) *)
-
-Time Eval vm_compute in integral (prec10) (FInt.exp prec10) 10 F.zero (F.fromZ 1).
-(* (Float F.radix false 875 (-9)) (Float F.radix false 885 (-9))*)
-(* [1.708984375,1.728515625] *)
-(* Finished transaction in 8. secs (8.400525u,0.004s)*)
-
-
-(* Definition prec30 := (30%bigZ) : F.precision. *)
-
-Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 12 F.zero (F.fromZ 1).
-(* Ibnd (Float F.radix false 922382922 (-29)) *)
-(*          (Float F.radix false 922608152 (-29)) *)
-(*      : f_interval F.type *)
-(* Finished transaction in 119. secs (118.387399u,0.008001s) *)
-
-(* Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 15 F.zero (F.fromZ 1). *)
-(* Ibnd (Float F.radix false 922481451 (-29)) *)
-(*          (Float F.radix false 922509615 (-29)) *)
-(*      : f_interval F.type *)
-(* [1.7182555999606848,1.7183080594986677] *)
-(* Finished transaction in 1119. secs (1114.773669u,0.288018s) *)
-
-Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 3 F.zero (F.fromZ 1).
-(* Ibnd (Float F.radix false 866040413 (-29)) *)
-(*          (Float F.radix false 981352359 (-29)) *)
-(*      : f_interval F.type *)
-(* [1.6131259743124247,1.8279112111777067] *)
-(* Finished transaction in 0. secs (0.232014u,0.s) *)
-
-Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 6 F.zero (F.fromZ 1).
-(* Ibnd (Float F.radix false 915307301 (-29)) *)
-(*          (Float F.radix false 929721300 (-29)) *)
-(*      : f_interval F.type *)
-(* [1.7048927042633295,1.7317408695816994] *)
-(* Finished transaction in 2. secs (1.744109u,0.s) *)
-
-Time Eval vm_compute in integral (prec30) (FInt.exp prec30) 10 F.zero (F.fromZ 1).
- (*  Ibnd (Float F.radix false 922045164 (-29))
-         (Float F.radix false 922946047 (-29))
-     : f_interval F.type *)
-(* [1.7174429520964622,1.7191209774464369] *)
-(*Finished transaction in 28. secs (28.685793u,0.060004s) *)
-
-Definition prec64 := (100%bigZ) : F.precision.
-Time Eval vm_compute in integral (prec64) (FInt.exp prec64) 3 F.zero (F.fromZ 1).
-(*      = Ibnd (Float 1022440057055222484579125177733%bigZ (-99)%bigZ) *)
-(*          (Float 1158576369005682997163092575753%bigZ (-99)%bigZ) *)
-(*      : f_interval F.type *)
-(* Finished transaction in 0. secs (0.036002u,0.s) *)
-
-Time Eval vm_compute in integral (prec64) (FInt.exp prec64) 6 F.zero (F.fromZ 1).
-(*     = Ibnd (Float 1080604133619477846151951543090%bigZ (-99)%bigZ) *)
-(*          (Float 1097621172613285410224947467848%bigZ (-99)%bigZ) *)
-(*      : f_interval F.type *)
-(* Finished transaction in 0. secs (0.284018u,0.s) *)
-
-Time Eval vm_compute in integral (prec64) (FInt.exp prec64) 9 F.zero (F.fromZ 1).
-(*      = Ibnd (Float 1088027276879093749447539091601%bigZ (-99)%bigZ) *)
-(*          (Float 1090154406753319694956663582203%bigZ (-99)%bigZ) *)
-(*      : f_interval F.type *)
-(* Finished transaction in 2. secs (2.168135u,0.004s) *)
-
-Definition prec100 := (100%bigZ) : F.precision.
-
-Time Eval vm_compute in integral (prec100) (FInt.exp prec100) 3 F.zero (F.fromZ 1).
-(* Ibnd (Float F.radix false 1022440057055222484579125177733 (-99)) *)
-(*          (Float F.radix false 1158576369005682997163092575753 (-99)) *)
-(*      : f_interval F.type *)
-
-(* [1.6131259778856115,1.827911206442992]  *)
-(* Finished transaction in 1. secs (1.584099u,0.s) *)
-
-
-Time Eval vm_compute in integral (prec100) (FInt.exp prec100) 6 F.zero (F.fromZ 1).
-(* Ibnd (Float F.radix false 1080604133619477846151951543090 (-99)) *)
-(*          (Float F.radix false 1097621172613285410224947467848 (-99)) *)
-(*      : f_interval F.type *)
-(* [1.7048927100652569,1.7317408636349296] *)
-(* Finished transaction in 14. secs (13.356834u,0.016001s) *)
-
-Time Eval vm_compute in integral (prec100) (FInt.exp prec100) 10 F.zero (F.fromZ 1).
-(* Ibnd (Float F.radix false 1088558799688262396851727958906 (-99)) *)
-(*          (Float F.radix false 1089622364625375369606290204212 (-99)) *)
-(*      : f_interval F.type *)
-(* [1.7174429602167616,1.719120969814866] *)
-(* Finished transaction in 229. secs (228.658291u,0.012001s) *)
 
 
 
