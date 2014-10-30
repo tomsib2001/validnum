@@ -2,3 +2,4 @@ extra_coquelicot.v
 extra_floats.v
 extra_interval.v
 integrals.v
+benchmarksIntegralTac.v
