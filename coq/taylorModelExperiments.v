@@ -150,6 +150,7 @@ Module Import TMF := TaylorModelFloat F PolF I PolI PolX Link Bnd.
 Definition tm_exp_lb_ub := (TMF.TM.TM_exp prec (thin zero) (I.bnd lb ub) 10).
 Definition exp_poly := (TM.RPA.approx tm_exp_lb_ub) .
 Definition reste_fin :=  (TM.RPA.error tm_exp_lb_ub) .
+Eval vm_compute in reste_fin.
 (* SearchAbout i_poly. *)
 (* About i_eval. *)
 (* About PolI.teval. *)
@@ -164,7 +165,9 @@ Eval vm_compute in (i_eval prec exp_poly (I.bnd lb ub)).
 (* About TM.TM_integral. *)
 Definition X0 := thin zero. 
 Definition X := I.bnd lb ub. (* [0,1], bientot périmé *)
-Definition exp_integrated := TM.TM_integral prec X0 X (TM.TM_exp prec X0 X 3).
+(* watch out: the followig is actually a primitive of exp which cancels at 0, 
+that is exp(x) - 1 *)
+Definition exp_integrated := TM.TM_integral prec X0 X (TM.TM_exp prec X0 X 10).
 Definition exp_integrated_poly :=  TM.RPA.approx exp_integrated.
 Definition exp_integrated_error := TM.RPA.error exp_integrated.
 Eval vm_compute in i_eval prec exp_integrated_poly X.
