@@ -14,5 +14,5 @@
 *.cache
 *.v.d
 config.sh
-.dir-local.el
+.dir-locals.el
 #*#
