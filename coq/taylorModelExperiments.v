@@ -186,12 +186,24 @@ Definition phi_to_integrate := TM.TM_mul prec (TM.TM_var prec X0 X order) comp_r
 Definition initial_guess_integrated := TM.TM_integral prec X0 X (phi_to_integrate X0 X order).
 Eval vm_compute in TM.RPA.approx initial_guess_integrated.
 
+Lemma test4 : I.subset 
+                (I.add prec (i_eval prec (TM.RPA.approx initial_guess) X) (TM.RPA.error initial_guess)) 
+                (I.add prec (thin one) (I.add prec (i_eval prec (TM.RPA.approx initial_guess_integrated) X) (TM.RPA.error initial_guess_integrated))).
+Proof.
+set m1 := (X in I.subset X _).
+set m2 := (X in I.subset _ X ).
+Eval vm_compute in m1.
+Eval vm_compute in m2.
+vm_compute. (* it works! *)
+done.
+Qed.
+
 Module TestIntegral := IntegralTactic F.
 
 Import TestIntegral.FInt.
 Import TestIntegral.
 
-Lemma test4 : I.subset 
+Lemma test5 : I.subset 
                 ((IP_horner_n ) order (I.bnd lb ub) ) 
                 (I.add prec 
                        (thin lb) 
