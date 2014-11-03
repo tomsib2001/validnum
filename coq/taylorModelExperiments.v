@@ -178,7 +178,7 @@ Eval vm_compute in exp_integrated_poly.
 Eval vm_compute in I.add prec (i_eval prec exp_integrated_poly X) (I.mul prec (I.sub prec X X0) (TM.RPA.error (exp_integrated))).
 
 (* let's try with a more complicated phi, for example with phi(t,x) = t sin(x), y(0) = 1 *)
-Definition initial_guess := TM.RPA.RPA (I.bnd one one::Datatypes.nil) (I.bnd (F.neg one) one).
+Definition initial_guess := TM.RPA.RPA (I.bnd one one::Datatypes.nil) (I.bnd (F.neg zero) one).
 
 Definition comp_rpa := TM.TM_comp prec (TM.TM_sin prec) initial_guess X0 X order.
 (* Eval vm_compute in TM.TI.T_var X0 6. *)
@@ -186,17 +186,21 @@ Definition phi_to_integrate := TM.TM_mul prec (TM.TM_var prec X0 X order) comp_r
 Definition initial_guess_integrated := TM.TM_integral prec X0 X (phi_to_integrate X0 X order).
 Eval vm_compute in TM.RPA.approx initial_guess_integrated.
 
-Lemma test4 : I.subset 
-                (I.add prec (i_eval prec (TM.RPA.approx initial_guess) X) (TM.RPA.error initial_guess)) 
-                (I.add prec (thin one) (I.add prec (i_eval prec (TM.RPA.approx initial_guess_integrated) X) (TM.RPA.error initial_guess_integrated))).
+Eval vm_compute in (PolI.tsub prec (TM.RPA.approx initial_guess) (TM.RPA.approx initial_guess_integrated) ).
+
+Lemma test4 : I.subset (i_eval prec
+                     (PolI.tsub prec
+                                (TM.RPA.approx initial_guess)
+                                (TM.RPA.approx initial_guess_integrated)
+                     )
+                     X)
+                       (I.add prec (thin one) (I.add prec (TM.RPA.error initial_guess_integrated) (I.neg (TM.RPA.error initial_guess))))
+.
 Proof.
-set m1 := (X in I.subset X _).
-set m2 := (X in I.subset _ X ).
-Eval vm_compute in m1.
-Eval vm_compute in m2.
 vm_compute. (* it works! *)
 done.
 Qed.
+
 
 Module TestIntegral := IntegralTactic F.
 
