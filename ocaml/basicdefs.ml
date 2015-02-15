@@ -1,7 +1,10 @@
 (* intervals and rounding *)
 
+open Semiring;;
 
 type intervalle = float*float (* essentiellement pour décorer et savoir de quoi on parle *)
+
+let makeIntervalle (f1 : float) (f2 : float) = ((f1,f2) : intervalle);;
 
 let print_interval (a,b) =
   print_string "(" ; print_float a; print_string ","; print_float b; print_string ")";;
@@ -184,3 +187,24 @@ let iSin i =
       | (false,false) -> (min (sin a1) (sin b1),max (sin a1) (sin b1));;
 
 let iCos i = iSin (iPlus i (thin (pi /. 2.)));;
+
+module IntervalSemiRing : (SEMIRING with type element = intervalle) =
+struct
+  type element = intervalle;;
+  let normal x = x
+  let zero = thin 0.
+  let one = thin 1.
+  let eq = (=)
+  let eqZero = eq zero
+  let eqOne = eq one
+  let add = iPlus
+  let mul = iMult
+  let div = iDiv
+  let divides _ _ = false
+  let injection i = thin( float_of_int i)
+  let intmul i = mul (injection i)
+  let sub = iSub
+  let exp = iPow
+  let soe = interval_to_string
+  let neg = iNeg
+end;;

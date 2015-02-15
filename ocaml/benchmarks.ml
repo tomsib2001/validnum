@@ -3,6 +3,8 @@ open Bisection;;
 open Newton;;
 open Integrals;;
 
+let compute = false
+
 let soi = string_of_int;;
 
 let time f x repeat =
@@ -22,6 +24,6 @@ print_string "s";
 print_newline()
 ;;
 
-List.iter (fun i -> print_string ("depth="^(soi i)^"\n") ; time (fun () -> (integralIntBounds iExp i (thin 0.) (thin 1.))) () 10; print_newline()) [3;6;10;11;12;13;14;15];;
+if compute then List.iter (fun i -> print_string ("depth="^(soi i)^"\n") ; time (fun () -> (integralIntBounds iExp i (thin 0.) (thin 1.))) () 10; print_newline()) [3;6;10;11;12;13;14;15];;
 
- time (fun () -> (integralIntBounds (fun x -> iSin (iPlus x (iExp x))) 13  (thin 0.) (thin 8.))) () 2;;
+if compute then time (fun () -> (integralIntBounds (fun x -> iSin (iPlus x (iExp x))) 13  (thin 0.) (thin 8.))) () 2;;

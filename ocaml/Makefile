@@ -69,7 +69,7 @@
 #
 # The Caml sources (including camlyacc and camllex source files)
 
-SOURCES = basicdefs.ml reification.ml integrals.ml diffeq.ml  bisection.ml taylor.ml newton.ml examples.ml benchmarks.ml
+SOURCES = error.ml semiring.ml printing.ml int.ml basicdefs.ml poly.ml reification.ml integrals.ml diffeq.ml  bisection.ml taylor.ml newton.ml examples.ml benchmarks.ml taylormodel.ml
 
 # The executable file to generate
 

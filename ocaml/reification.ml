@@ -91,5 +91,3 @@ let varFunAD f k (a,b) = raise Not_found;;
 
 (* symbolic functions to automatic differentiation of order 1 functions *)
 let sym2ad1= makeF constAD varAD plusAD multAD negAD subAD divAD cosAD sinAD expAD logAD powAD varFunAD;;
-
-

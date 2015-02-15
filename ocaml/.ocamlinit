@@ -1,0 +1,15 @@
+#load "semiring.cmo";;
+#load "basicdefs.cmo";; 
+#load "reification.cmo";;
+#load "integrals.cmo";;
+#load "diffeq.cmo";;
+#load "bisection.cmo";;
+#load "taylor.cmo";;
+#load "newton.cmo";;
+#load "examples.cmo";;
+#load "benchmarks.cmo";;
+#load "printing.cmo";; 
+#load "int.cmo";;
+#load "error.cmo";;  
+#load "poly.cmo";;
+#load "taylormodel.cmo";;
