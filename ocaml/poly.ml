@@ -27,30 +27,6 @@ sig
   val intmul :  int -> polynomial -> polynomial
 end;;
 
-(* module type POLYNOMIAL= *)
-(*   functor (R : SEMIRING) -> *)
-(* sig *)
-(*   type coeff *)
-(*   type monomial *)
-(*   type polynomial *)
-(*   val coeffInjection : int -> coeff *)
-(*   val zeroPol : polynomial *)
-(*   val onePol : polynomial *)
-(*   val degree : polynomial -> int *)
-(*   val makePol : (coeff*int) list -> polynomial *)
-(*   val add : polynomial -> polynomial -> polynomial *)
-(*   val mul : polynomial -> polynomial -> polynomial *)
-(*   val sub : polynomial -> polynomial -> polynomial *)
-(*   val neg : polynomial -> polynomial *)
-(*   val exp : polynomial -> int -> polynomial *)
-(*   val polToString : string -> polynomial -> string *)
-(*   val normal : polynomial -> polynomial *)
-(*   val eq : polynomial -> polynomial -> bool *)
-(*   val shiftCons : polynomial -> int -> coeff -> polynomial *)
-(*   val intmul : int -> polynomial -> polynomial *)
-(* end;; *)
-
-
 module PolyOfSemiRing (R : SEMIRING) : (POLYNOMIALSIG with type coeff = R.element) =
 struct
   type coeff = R.element
@@ -69,8 +45,9 @@ struct
   
   let degree p = List.fold_right (fun (x,y) e -> max y e) p (-1)
   
+(* in these two functions we sort coefficients to avoid any unpleasant effects *)
   let makePol l = List.sort (fun (_,x) (_,y) -> Pervasives.compare x y) l;;
-  let polToList l = l
+  let polToList l = List.sort (fun (_,x) (_,y) -> Pervasives.compare x y) l;;
 
   let rec add p1 p2 = match (p1,p2) with
     |([],p2) -> p2
