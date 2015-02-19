@@ -142,8 +142,8 @@ OPTOBJS = $(OBJS:.cmx=.cmx)
 $(EXEC): $(OBJS) 
 	$(CAMLC) $(CUSTOM) -o $(EXEC) $(LIBS) $(OBJS)
 
-# $(EXEC)-opt: $(OPTOBJS)
-#	$(CAMLOPT) -o $(EXEC) $(LIBS:.cma=.cmxa) $(OPTOBJS)
+$(EXEC)-opt: $(OPTOBJS)
+	$(CAMLOPT) -o $(EXEC) $(LIBS:.cma=.cmxa) $(OPTOBJS)
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .mly 
 

@@ -15,6 +15,8 @@ sig
   val degree : polynomial -> int
   val makePol : (coeff*int) list -> polynomial
   val polToList : polynomial -> (coeff*int) list
+  val polToFlatList : polynomial -> coeff list
+  val flatListToPol : coeff list -> polynomial
   val add : polynomial -> polynomial -> polynomial
   val mul : polynomial -> polynomial -> polynomial
   val sub : polynomial -> polynomial -> polynomial
@@ -47,9 +49,14 @@ struct
   
 (* in these two functions we sort coefficients to avoid any unpleasant effects *)
   let makePol l = List.sort (fun (_,x) (_,y) -> Pervasives.compare x y) l;;
-  let polToList l = List.sort (fun (_,x) (_,y) -> Pervasives.compare x y) l;;
 
-  let rec add p1 p2 = match (p1,p2) with
+  let polToList (l : polynomial) = List.sort (fun (_,x) (_,y) -> Pervasives.compare x y) l;;
+
+  let polToFlatList (l : polynomial) = List.map fst (polToList l);;
+  
+  let flatListToPol (l : coeff list) = (List.mapi (fun i x -> (x,i)) l : polynomial);;
+
+  let rec add (p1 : polynomial) (p2:polynomial)  = match (p1,p2) with
     |([],p2) -> p2
     |(p1,[]) -> p1
     |((a,b)::t1,(c,d)::t2) ->
@@ -83,7 +90,7 @@ struct
 
   let sub p1 p2 = add p1 (neg p2)
   
-  let rec mul p1 p2 = match (p1,p2) with
+  let rec mul (p1 : polynomial) (p2 : polynomial) = match (p1,p2) with
     |([],p2) -> []
     |(p1,[]) -> []
     |((a,b)::t1,p2) -> add (shiftCons p2 b a) (mul t1 p2)
@@ -152,6 +159,173 @@ struct
 
 end;;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+module PolyFlatOfSemiRing (R : SEMIRING) : (POLYNOMIALSIG with type coeff = R.element) =
+struct
+  type coeff = R.element
+  
+  type monomial = R.element
+  
+  type polynomial = monomial list   (* (coeff,deg) in increasing degree order, no zero coeffs (sparse polynomials)*)
+  
+  let coeffInjection (x:int) = R.injection x 
+
+  let (zeroPol:polynomial) = []
+  
+  let (onePol:polynomial) = [(R.one)]
+  
+  let makePol x = x
+  
+  let clean (p : polynomial) = 
+    let rec aux = function
+      | [] -> []
+      | a::t -> if R.eqZero a then (aux t) else (a::t) in
+    List.rev (aux (List.rev p));;
+
+  let degree (p: polynomial)  = ((List.length (clean p)) - 1);;
+    
+(* in these two functions we sort coefficients to avoid any unpleasant effects *)
+  let makePol (l : (coeff*int) list) = List.map fst (List.sort (fun (_,x) (_,y) -> Pervasives.compare x y) l);;
+
+  let polToList l = List.mapi (fun i x -> (x,i)) l;;
+  
+  let polToFlatList (p : polynomial) = (p : R.element list);;
+  
+  let flatListToPol (p : polynomial) = (p : coeff list);;
+
+  let rec add (p1 : polynomial) (p2 : polynomial) = match (p1,p2) with
+    |([],p2) -> p2
+    |(p1,[]) -> p1
+    |(a::t1,c::t2) ->
+      let u = (R.add a c) in
+      (u)::(add t1 t2)
+ 
+  let rec make_n_zeros = function
+    | 0 -> []
+    | k -> (R.zero)::(make_n_zeros (k-1));;
+
+  let mul_const (const : R.element) (p : polynomial) =
+    match R.eqZero(const) with
+    | true -> []
+    | false -> 
+      let rec aux res = function
+	| [] -> res
+	| a::t -> aux ((R.mul a const)::res) t
+      in List.rev (aux [] p);;
+
+(* multiply p by cons * (x**n) *)
+  let shiftCons (p : polynomial) n const =
+        match R.eqZero(const) with
+      | true -> []
+      | false ->
+	match p with
+	| [] -> []
+        | a::t -> (make_n_zeros n)@(mul_const const (a::t));;
+	  
+            
+  (* let shift p n = shiftCons p n R.one *)
+
+  let shift p n =
+    let rec aux res = function
+      | 0 -> res
+      | k -> aux ((R.zero)::res) (k-1)
+    in aux p n;;
+
+  let intmul x p = shiftCons p 0 (R.injection x)
+
+  let neg p = shiftCons p 0 (R.neg R.one)
+
+  let sub p1 p2 = add p1 (neg p2)
+  
+  let rec mul (p1 : polynomial) (p2 : polynomial) = match (p1,p2) with
+    |([],p2) -> []
+    |(p1,[]) -> []
+    |(a::t1,p2) -> add (shiftCons p2 0 a) (shift (mul t1 p2) 1)
+
+  let powerToString var n =
+    if n = 0 then "1"
+    else
+      if n = 1 then var
+      else
+        (var^"^"^(soi n))
+
+  let rec monomialToString var a n =
+    if (R.eqOne a) then
+      powerToString var n
+    else
+      (R.soe a)^" "^
+        (
+          if n = 0 then ""
+          else if n=1 then var
+          else (var^"^"^(soi n))
+        )
+
+  let polToString var (p : polynomial) = 
+    let rec aux = function
+      | [] -> "0\n"
+      | [(a,b)] -> (monomialToString var a b)^"\n"
+      | (a,b)::t -> (monomialToString var a b)^" + "^(aux t)
+    in aux (List.mapi (fun i x -> (x,i)) p);;
+
+
+  let rec compareMonoms (a,b) (c,d) = b < d
+
+  let normal p = clean p;;
+
+  let eq p1 p2 = normal(p1) = normal(p2)
+
+  let rec exp p n = match n with
+    | 0 -> onePol
+    | _ -> if n < 0 then raise(NegativePowerOfPol)
+      else
+        let m = n/2 in
+        let p1 = exp p m in
+        ps (polToString "x" p1);
+        match n mod 2 with
+          |0 -> mul p1 p1
+          |_ -> mul (mul p1 p1) p
+
+end;;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 (* module SemiRingToPoly = (PolyOfSemiRing : POLYNOMIAL);; *)
 
 module PolyInt = PolyOfSemiRing(IntRing);;
@@ -185,3 +359,4 @@ module PolyInt = PolyOfSemiRing(IntRing);;
 (* interval polynomials *)
 
 module IntervalPoly = PolyOfSemiRing(IntervalSemiRing);;
+module IntervalFlatPoly = PolyFlatOfSemiRing(IntervalSemiRing);;

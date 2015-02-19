@@ -4,13 +4,14 @@ open Basicdefs;;
 open Poly;;
 open Error;;
 open Printing;;
+open Reification;;
 
 let mI = makeIntervalle;;
 let zero = IntervalSemiRing.zero;;
 let one = IntervalSemiRing.one;;
 
 
-module PolI = IntervalPoly;;
+module PolI = IntervalFlatPoly;;
 
 type taylorModel = PolI.polynomial * intervalle;;
 
@@ -20,11 +21,12 @@ let error (mf : taylorModel) = snd mf;;
 let size (tm : taylorModel) = PolI.degree (fst tm);;
 
 (* computes a valid polynomial bound on the polynomial represented by the sequence l on the interval i - x0  *)
-let computeBound l x0 i =
+let computeBound (l : PolI.polynomial) x0 i =
+  let x = (iSub i x0) in
   let rec aux res = function
     | [] -> res
-    | h::t -> iPlus (iMult res (iSub i x0)) h
-  in aux zero l;;
+    | h::t -> iPlus (iMult res x) h
+  in aux zero (PolI.polToFlatList l);;
 
 let tm_const (c : intervalle) n = 
   let rec aux res = function
@@ -116,45 +118,26 @@ let cut_list n l =
 cut_list 5 [1;2;3;4;5;6;7];;
 
 let tm_mul (mf : taylorModel) (mg : taylorModel) i x0 n =
-  let t = Array.make (2*n+1) (zero) in
-  let lpolf = (PolI.polToList (pol mf)) in
-  let lpolg = (PolI.polToList (pol mg)) in
+  let pf = pol mf 
+  and pg = pol mg in
   let deltaf = error mf in
   let deltag = error mg in
-  let remf = ref lpolf  in
-  for i = 0 to (n-1) do
-    psn (soi (List.length !remf));
-    let (fk,k) = List.hd (!remf) in
-    if k=i then
-      begin
-  	let remg = ref lpolg in
-  	for j = 0 to (n-1) do
-  	  begin
-  	    let (gl,l) = List.hd (!remg) in
-  	    if l=j then
-  	      begin
-  		(* ps "i : "; pi i; psn " and j: "; pi j; ps "and i+j: "; pi (i+j); ps "\n"; *)
-  		(* ps (interval_to_string (t.(i+j))); ps (interval_to_string fk); ps " "; ps (interval_to_string gl); ps "\n"; *)
-  		t.(i+j) <- (iPlus (t.(i+j)) (iMult fk gl));
-  		remg := List.tl (!remg)
-  	      end
-  	    else ()
-  	  end;
-  	done;
-      remf := List.tl (!remf)
-      end
-    else
-      ()
-  done;
-  let tlist = Array.to_list t in
-  let b = computeBound tlist x0 i in
-  let bf = computeBound (List.map fst (flatten lpolf)) x0 i in
-  let bg = computeBound (List.map fst (flatten lpolg)) x0 i in
+  let res = PolI.mul pf pg in
+  let b = computeBound res x0 i in
+  let bf = computeBound pf x0 i in
+  let bg = computeBound pg x0 i in
   let delta = 
     iPlus
       b (iPlus (iPlus (iMult (deltaf) bg) (iMult (deltag) (bf))) (iMult deltaf deltag)) in
-  let m = cut_list (n+1) tlist in
-  (PolI.makePol (List.mapi (fun i x -> (x,i)) m),delta);;
+  let m = cut_list (n+1) (PolI.polToFlatList res) in
+  ((PolI.flatListToPol m),delta);;
+
+let p1 = PolI.flatListToPol [zero;one];;
+PolI.polToString "x"  ( p1);;
+let p2 = PolI.flatListToPol [zero;one];;
+PolI.polToString "x"  ( p2);;
+let p3 = PolI.mul p1 p2;;
+PolI.polToString "x"  ( p3);;
 
 (* a small test *)
 let tvar1 = tm_var (0.,1.) one 5;;
@@ -183,7 +166,29 @@ let polx2 =  (PolI.makePol (flatten [one,18]));;
 PolI.polToList polx2;;
 
 
-#trace tm_mul;;
+(* #trace tm_mul;; *)
 
 let (p,err) = polynomialEvaluation polx2 tvar2 (0.,1.) zero 10;;
 PolI.polToList p,err;;
+
+let tm_comp i x0 mf n (g : 'a elemFun) 
+    (make_mg : (* x0  *)intervalle -> (* i *) intervalle -> int -> taylorModel) 
+    =
+  let pf = pol mf 
+  and deltaf = error mf in
+  let bf = computeBound pf x0 i in
+  let lf = (PolI.polToFlatList pf) in
+  let (polg,errg) = make_mg (List.hd lf) (iPlus bf deltaf) n in
+  let m1 = (PolI.flatListToPol (zero::(List.tl lf)),deltaf) in
+  let c = polynomialEvaluation polg m1 i x0 n in
+  let m = (c,iPlus (error c) deltaf) in
+  m
+;;
+
+(* let tm_sin i x0 n = *)
+(*   let rec aux = function *)
+(*     | *)
+
+
+(* let tm_base_div mf mg i x0 n = *)
+(*   tm_mul *)
