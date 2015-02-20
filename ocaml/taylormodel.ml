@@ -59,23 +59,6 @@ PolI.polToList (fst tvar);;
 let tvar = tm_var (0.,1.) zero 0;;
 PolI.polToList (fst tvar);;
 
-(* (\* probably incorrect *\) *)
-(* let tm_pow i k x0 n = *)
-(*   if n=0 then tm_const x0 n *)
-(*   else if n=1 then tm_var i x0 n *)
-(*   else (\* n>=2 *\) *)
-(*     let a0 = (x0,0) in   *)
-(*     let rec aux res = function *)
-(*       | 0 -> a0::res *)
-(*       | l -> let h = if l=k then (one,k) else (zero,l) in  *)
-(* 	     aux (h::res) (l-1) *)
-(*     in let delta = if n>=k then zero else (iSub (iPow i k) x0) *)
-(*     in (PolI.makePol (aux [] n),thin 0.);; *)
-
-(* (\* a small test *\) *)
-(* let t3 = tm_pow (thin 1.) 7 (thin 1.) 5;; *)
-(* PolI.polToList (fst t3);; *)
-
 let flatten p = 
   if p = [] then [] else
   let rec aux res = function
@@ -264,7 +247,7 @@ let picardOp (yn : solution) (initCond : intervalle list) (phi : 'a vfield) (sVa
   List.map2 (fun iC m -> tm_add (tm_const iC (n+1)) (tm_int i x0 m) (n+1)) initCond toIntegrate;;
 
 let 
-let n = 100;;
+let n = 2000;;
 let i = (0.,10.);;
 let x0 = (thin 0.);;
 let y0 = [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n];;
@@ -289,7 +272,8 @@ let (_,l,e) = iter n 20 y0;;
 e;;
 
 (* here we get a correct value for sin(1) with many correct digits *)
-PolI.eval (PolI.flatListToPol l) (thin (5.));;
+PolI.eval (PolI.flatListToPol l) (thin (1.1));;
+
 
 (* PolI.polToFlatList (fst(List.hd y5));; *)
 (* snd(List.hd y5) *)
