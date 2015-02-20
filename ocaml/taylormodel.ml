@@ -23,10 +23,14 @@ let size (tm : taylorModel) = PolI.degree (fst tm);;
 (* computes a valid polynomial bound on the polynomial represented by the sequence l on the interval i - x0  *)
 let computeBound (l : PolI.polynomial) x0 i =
   let x = (iSub i x0) in
+  (* assert(Basicdefs.contient x 0.); *)
   let rec aux res = function
     | [] -> res
-    | h::t -> iPlus (iMult res x) h
-  in aux zero (PolI.polToFlatList l);;
+    | h::t -> aux (iPlus (iMult res x) h) t
+  in aux zero (List.rev (PolI.polToFlatList l));;
+
+PolI.polToFlatList (PolI.makePol ([one,0;one,2]));;
+computeBound (PolI.makePol ([one,0;one,2])) (thin 0.5) (0.,1.);;
 
 let tm_const (c : intervalle) n = 
   let rec aux res = function
@@ -115,15 +119,29 @@ let cut_list n l =
     | _ -> failwith "this list is too short to be thus shaved"
   in List.rev(aux [] (l,n));;
 
+let cut_list_first n l =   
+  let rec aux = function
+    | (li,0) -> li
+    | (h::t,k) -> aux (t,k-1)
+    | _ -> failwith "this list is too short to be thus shaved"
+  in (aux (l,n));;
+
+
 cut_list 5 [1;2;3;4;5;6;7];;
+cut_list_first 5 [1;2;3;4;5;6;7];;
 
 let tm_mul (mf : taylorModel) (mg : taylorModel) i x0 n =
   let pf = pol mf 
   and pg = pol mg in
   let deltaf = error mf in
   let deltag = error mg in
+  (* assert (Basicdefs.contient deltaf 0.); *)
+  (* assert (Basicdefs.contient deltag 0.); *)
   let res = PolI.mul pf pg in
-  let b = computeBound res x0 i in
+  let d = PolI.shift (PolI.flatListToPol (cut_list_first (n+1) (PolI.polToFlatList res))) (n+1) in
+  let b = computeBound d x0 i in
+  (* Basicdefs.print_interval b; *)
+  assert(Basicdefs.contient b 0.);
   let bf = computeBound pf x0 i in
   let bg = computeBound pg x0 i in
   let delta = 
@@ -132,20 +150,22 @@ let tm_mul (mf : taylorModel) (mg : taylorModel) i x0 n =
   let m = cut_list (n+1) (PolI.polToFlatList res) in
   ((PolI.flatListToPol m),delta);;
 
-let p1 = PolI.flatListToPol [zero;one];;
-PolI.polToString "x"  ( p1);;
-let p2 = PolI.flatListToPol [zero;one];;
-PolI.polToString "x"  ( p2);;
+let p1 = PolI.flatListToPol [zero;thin 0.5];;
+PolI.polToString "x"  (p1);;
+let p2 = PolI.flatListToPol [zero;thin 0.5];;
+PolI.polToString "x"  (p2);;
 let p3 = PolI.mul p1 p2;;
-PolI.polToString "x"  ( p3);;
+PolI.polToString "x"  (p3);;
+(* PolI.polToFlatList (PolI.shift (PolI.flatListToPol (cut_list_first 0 (PolI.polToFlatList p3))) 1);; *)
 
 (* a small test *)
 let tvar1 = tm_var (0.,1.) one 5;;
 PolI.polToList (pol tvar1);;
-let tvar2 = tm_const (thin 0.5) 5;;
-PolI.polToList (pol tvar2);;
-let tmul = tm_mul tvar1 tvar2 (0.,1.) (thin 0.) 5;;
+let tconst2 = tm_const (thin 0.5) 5;;
+PolI.polToList (pol tconst2);;
+let tmul = tm_mul tvar1 tconst2 (0.,1.) (thin 0.) 5;;
 PolI.polToList (pol tmul);;
+error tmul;;
 
 flatten [(one,3);(one,15)];;
 
@@ -185,9 +205,48 @@ let tm_comp i x0 mf n (g : 'a elemFun)
   m
 ;;
 
+(* I.add prec (Imul (Isub X X0) (RPA.error Mf)) ((I.add prec (Pol.peval prec R (Isub X0 X0)) ) (Imul (Isub X0 X0) (RPA.error Mf))). *)
+let tm_int i x0 mf = 
+  let pf = pol mf 
+  and errf = error mf in
+  let primPf = PolI.primitive pf in
+  let intErr = List.fold_right iPlus 
+    [
+      iMult (iSub i x0) errf;
+      PolI.eval primPf (iSub x0 x0);
+      iMult (iSub x0 x0) errf
+    ]
+    zero
+  in
+  (primPf,intErr);;
+
+let tm_neg mf =
+  let (p,err) = mf in
+  (PolI.neg p,Basicdefs.neg err);;
+
+let rec get_tm (const : 'a -> intervalle) i x0 n = function
+  | Const (a : 'a) -> tm_const (const a) n
+  | Var s -> tm_var i x0 n
+  | Plus (f1, f2) -> tm_add (get_tm const i x0 n f1) (get_tm const i x0 n f2) n
+  | Sub (f1,f2) -> get_tm const i x0 n (Plus(f1,Neg f2))
+  | Pow(f,j) -> polynomialEvaluation (PolI.makePol (flatten [one,j])) (get_tm const i x0 n f) i x0 n
+  | _ -> failwith "not implemented yet";;
+
+
+let (p,e) = get_tm (fun x -> x)  (0.,1.) zero 5 (Pow(Plus(Const one,Var "x"),3));;
+PolI.polToFlatList p;;
+e;;
+
+(* let (p,e) = tm_int (0.,1.) zero (tm_var (0.,1.) zero 5);; *)
+(* let (p1,e1) = tm_int (0.,1.) zero (p,e);; *)
+(* PolI.polToFlatList p;; *)
+(* PolI.polToFlatList p1;; *)
+
+
+
 (* let tm_sin i x0 n = *)
-(*   let rec aux = function *)
-(*     | *)
+(*   let rec aux res = function *)
+(*     | 0 ->  *)
 
 
 (* let tm_base_div mf mg i x0 n = *)

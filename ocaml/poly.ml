@@ -17,11 +17,14 @@ sig
   val polToList : polynomial -> (coeff*int) list
   val polToFlatList : polynomial -> coeff list
   val flatListToPol : coeff list -> polynomial
+  val shift : polynomial -> int -> polynomial
   val add : polynomial -> polynomial -> polynomial
   val mul : polynomial -> polynomial -> polynomial
   val sub : polynomial -> polynomial -> polynomial
   val neg : polynomial -> polynomial
   val exp : polynomial -> int -> polynomial
+  val primitive : polynomial -> polynomial
+  val eval : polynomial -> coeff -> coeff
   val polToString : string -> polynomial -> string
   val normal : polynomial -> polynomial
   val eq : polynomial -> polynomial -> bool
@@ -94,6 +97,10 @@ struct
     |([],p2) -> []
     |(p1,[]) -> []
     |((a,b)::t1,p2) -> add (shiftCons p2 b a) (mul t1 p2)
+
+  let primitive p = failwith "primitive not implemented yet"
+
+  let eval p x = failwith "eval not implemented yet"
 
   let powerToString var n =
     if n = 0 then "1"
@@ -191,8 +198,6 @@ struct
   
   let (onePol:polynomial) = [(R.one)]
   
-  let makePol x = x
-  
   let clean (p : polynomial) = 
     let rec aux = function
       | [] -> []
@@ -200,12 +205,27 @@ struct
     List.rev (aux (List.rev p));;
 
   let degree (p: polynomial)  = ((List.length (clean p)) - 1);;
+
+  let flatten (p : (coeff*int) list) = 
+    if p = [] then [] else
+      let rec aux res = function
+	| [] -> res
+	| [a,b] -> (a,b)::res
+	| (a,b)::(c,d)::t -> if d < b then failwith "unsorted polynomial" else if d = (b+1) then aux ((a,b)::res) ((c,d)::t) else (* b < d *)
+	    aux ((a,b)::res) ((R.zero,b+1)::(c,d)::t)
+  in let p1 = match (List.hd p) with (* ok because we've ruled out p = [] *)
+  | (_,0) -> p
+  | (_,_) -> (R.zero,0)::p
+     in List.rev (aux [] p1);;
+  
     
-(* in these two functions we sort coefficients to avoid any unpleasant effects *)
-  let makePol (l : (coeff*int) list) = List.map fst (List.sort (fun (_,x) (_,y) -> Pervasives.compare x y) l);;
+  (* in these two functions we sort coefficients to avoid any unpleasant effects *)
+  let makePol (l : (coeff*int) list) = List.map fst (flatten (List.sort (fun (_,x) (_,y) -> Pervasives.compare x y) l));;
 
   let polToList l = List.mapi (fun i x -> (x,i)) l;;
   
+  
+
   let polToFlatList (p : polynomial) = (p : R.element list);;
   
   let flatListToPol (p : polynomial) = (p : coeff list);;
@@ -258,6 +278,19 @@ struct
     |([],p2) -> []
     |(p1,[]) -> []
     |(a::t1,p2) -> add (shiftCons p2 0 a) (shift (mul t1 p2) 1)
+
+(* builds a formal primitive (integration constant = 0) *)
+  let primitive (p : polynomial) =
+    let rec aux (res,k) = function
+      | [] -> List.rev res
+      | h::t -> aux ((R.div h (R.injection (k)))::res,k+1) t
+    in shift (aux ([],1) p) 1;;
+
+  let eval p x =
+    let rec aux res = function
+      | [] -> res
+      | h::t -> aux (R.add (R.mul h x) res) t
+    in aux R.zero (List.rev p);;
 
   let powerToString var n =
     if n = 0 then "1"
