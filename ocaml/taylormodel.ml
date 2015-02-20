@@ -222,18 +222,24 @@ let tm_int i x0 mf =
 
 let tm_neg mf =
   let (p,err) = mf in
-  (PolI.neg p,Basicdefs.neg err);;
+  (PolI.neg p,Basicdefs.iNeg err);;
 
-let rec get_tm (const : 'a -> intervalle) i x0 n = function
+let get_tm (const : 'a -> intervalle) (models : (string*taylorModel) list) i x0 n f = 
+  let rec aux = function
   | Const (a : 'a) -> tm_const (const a) n
-  | Var s -> tm_var i x0 n
-  | Plus (f1, f2) -> tm_add (get_tm const i x0 n f1) (get_tm const i x0 n f2) n
-  | Sub (f1,f2) -> get_tm const i x0 n (Plus(f1,Neg f2))
-  | Pow(f,j) -> polynomialEvaluation (PolI.makePol (flatten [one,j])) (get_tm const i x0 n f) i x0 n
-  | _ -> failwith "not implemented yet";;
+  | Var s -> (try
+      List.assoc s models with
+      | _ -> tm_var i x0 n) (* for now we assume that it must be the time variable *)
+  | Plus (f1, f2) -> tm_add (aux f1) (aux f2) n
+  | Sub (f1,f2) -> aux (Plus(f1,Neg f2))
+  | Pow(f,j) -> polynomialEvaluation (PolI.makePol (flatten [one,j])) (aux f) i x0 n
+  | Neg(f) -> tm_neg (aux f)
+  | _ -> failwith "not implemented yet"
+  in aux f
+;;
 
 
-let (p,e) = get_tm (fun x -> x)  (0.,1.) zero 5 (Pow(Plus(Const one,Var "x"),3));;
+let (p,e) = get_tm (fun x -> x) []  (0.,1.) zero 10 (Pow(Plus(Const one,Var "x"),5));;
 PolI.polToFlatList p;;
 e;;
 
@@ -243,11 +249,47 @@ e;;
 (* PolI.polToFlatList p1;; *)
 
 
+type solution = taylorModel list;; (* the type of (candidate) solutions to differential equations *)
+type 'a vfield = 'a elemFun list;; (* the type of vector fields from R n to R n *)
 
-(* let tm_sin i x0 n = *)
-(*   let rec aux res = function *)
-(*     | 0 ->  *)
+let (fieldExample : intervalle vfield) = [Var "x1"; Neg (Var "x0")] (* diff. eq for sin: x'' = - x *)
+
+let applyField (yn : solution) (phi : intervalle vfield) (sVars : string list) i x0 n =
+  let table = List.map2 (fun s m -> (s,m)) sVars yn in
+  let toIntegrate = List.map (get_tm (fun x -> x) table i x0 n) phi
+  in toIntegrate;;
+
+let picardOp (yn : solution) (initCond : intervalle list) (phi : 'a vfield) (sVars : string list) i x0 n =
+  let toIntegrate = applyField yn phi sVars i x0 n in
+  List.map2 (fun iC m -> tm_add (tm_const iC (n+1)) (tm_int i x0 m) (n+1)) initCond toIntegrate;;
+
+let 
+let n = 100;;
+let i = (0.,10.);;
+let x0 = (thin 0.);;
+let y0 = [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n];;
+let initCond = [zero;one];;
+let y1 = picardOp y0 initCond fieldExample ["x0";"x1"] i x0 n;;
+let y2 = picardOp y1 initCond fieldExample ["x0";"x1"] i x0 (n+1);;
+let y3 = picardOp y2 initCond fieldExample ["x0";"x1"] i x0 (n+2);;
+let y4 = picardOp y3 initCond fieldExample ["x0";"x1"] i x0 (n+3);;
+let y5 = picardOp y4 initCond fieldExample ["x0";"x1"] i x0 (n+4);;
 
 
-(* let tm_base_div mf mg i x0 n = *)
-(*   tm_mul *)
+let iter n its y0 =
+let rec aux = function
+  | (y,0) -> y
+  | (y,k) -> let ynew = picardOp y initCond fieldExample ["x0";"x1"] i x0 (n+(its-k)) in aux (ynew,k-1)
+in let res = aux (y0,its)
+   in (aux,PolI.polToFlatList (fst(List.hd res)),snd(List.hd res))
+;;
+
+let (_,l,e) = iter n 20 y0;;
+
+e;;
+
+(* here we get a correct value for sin(1) with many correct digits *)
+PolI.eval (PolI.flatListToPol l) (thin (5.));;
+
+(* PolI.polToFlatList (fst(List.hd y5));; *)
+(* snd(List.hd y5) *)

@@ -81,7 +81,7 @@ EXEC = a.out
 # The Caml compilers.
 # You may fix here the path to access the Caml compiler on your machine
 # You may also have to add various -I options.
-CAMLC = ocamlc
+CAMLC = ocamlc -g
 CAMLOPT = ocamlopt
 CAMLDEP = ocamldep
 CAMLLEX = ocamllex
