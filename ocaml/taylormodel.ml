@@ -246,8 +246,7 @@ let picardOp (yn : solution) (initCond : intervalle list) (phi : 'a vfield) (sVa
   let toIntegrate = applyField yn phi sVars i x0 n in
   List.map2 (fun iC m -> tm_add (tm_const iC (n+1)) (tm_int i x0 m) (n+1)) initCond toIntegrate;;
 
-let 
-let n = 2000;;
+let n = 200;;
 let i = (0.,10.);;
 let x0 = (thin 0.);;
 let y0 = [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n];;
@@ -267,13 +266,13 @@ in let res = aux (y0,its)
    in (aux,PolI.polToFlatList (fst(List.hd res)),snd(List.hd res))
 ;;
 
-let (_,l,e) = iter n 20 y0;;
+let (_,l,e) = iter n 40 y0;;
 
 e;;
 
 (* here we get a correct value for sin(1) with many correct digits *)
-PolI.eval (PolI.flatListToPol l) (thin (1.1));;
-
+PolI.eval (PolI.flatListToPol l) (thin (5.));;
+(* PolI.polToString "x" (PolI.flatListToPol l);; *)
 
 (* PolI.polToFlatList (fst(List.hd y5));; *)
 (* snd(List.hd y5) *)
