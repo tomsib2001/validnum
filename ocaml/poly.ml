@@ -289,7 +289,7 @@ struct
   let eval p x =
     let rec aux res = function
       | [] -> res
-      | h::t -> aux (R.add (R.mul h x) res) t
+      | h::t -> aux (R.add (R.mul res x) h) t
     in aux R.zero (List.rev p);;
 
   let powerToString var n =
