@@ -1,6 +1,6 @@
 (* intervals and rounding *)
 
-open Semiring;;
+open Quasiring;;
 
 type intervalle = float*float (* essentiellement pour décorer et savoir de quoi on parle *)
 
@@ -188,7 +188,7 @@ let iSin i =
 
 let iCos i = iSin (iPlus i (thin (pi /. 2.)));;
 
-module IntervalSemiRing : (SEMIRING with type element = intervalle) =
+module IntervalQuasiRing : (QUASIRING with type element = intervalle) =
 struct
   type element = intervalle;;
   let normal x = x

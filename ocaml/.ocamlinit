@@ -1,4 +1,4 @@
-#load "semiring.cmo";;
+#load "quasiring.cmo";;
 #load "basicdefs.cmo";; 
 #load "reification.cmo";;
 #load "integrals.cmo";;

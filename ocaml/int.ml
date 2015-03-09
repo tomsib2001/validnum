@@ -1,5 +1,5 @@
 open Printing
-open Semiring
+open Quasiring
 
 
 module IntRing =

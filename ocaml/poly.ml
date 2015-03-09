@@ -1,7 +1,7 @@
 open Error
 open Printing
 open Int
-open Semiring
+open Quasiring
 open Basicdefs
 
 module type POLYNOMIALSIG =
@@ -32,7 +32,7 @@ sig
   val intmul :  int -> polynomial -> polynomial
 end;;
 
-module PolyOfSemiRing (R : SEMIRING) : (POLYNOMIALSIG with type coeff = R.element) =
+module PolyOfQuasiRing (R : QUASIRING) : (POLYNOMIALSIG with type coeff = R.element) =
 struct
   type coeff = R.element
   
@@ -184,7 +184,7 @@ end;;
 
 
 
-module PolyFlatOfSemiRing (R : SEMIRING) : (POLYNOMIALSIG with type coeff = R.element) =
+module PolyFlatOfQuasiRing (R : QUASIRING) : (POLYNOMIALSIG with type coeff = R.element) =
 struct
   type coeff = R.element
   
@@ -359,9 +359,9 @@ end;;
 
 
 
-(* module SemiRingToPoly = (PolyOfSemiRing : POLYNOMIAL);; *)
+(* module QuasiRingToPoly = (PolyOfQuasiRing : POLYNOMIAL);; *)
 
-module PolyInt = PolyOfSemiRing(IntRing);;
+module PolyInt = PolyOfQuasiRing(IntRing);;
 
 (* module PolyIsRing = *)
 (*   functor (Poly : POLYNOMIALSIG) ->     *)
@@ -391,5 +391,5 @@ module PolyInt = PolyOfSemiRing(IntRing);;
 
 (* interval polynomials *)
 
-module IntervalPoly = PolyOfSemiRing(IntervalSemiRing);;
-module IntervalFlatPoly = PolyFlatOfSemiRing(IntervalSemiRing);;
+module IntervalPoly = PolyOfQuasiRing(IntervalQuasiRing);;
+module IntervalFlatPoly = PolyFlatOfQuasiRing(IntervalQuasiRing);;

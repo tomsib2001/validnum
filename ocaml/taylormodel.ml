@@ -7,8 +7,8 @@ open Printing;;
 open Reification;;
 
 let mI = makeIntervalle;;
-let zero = IntervalSemiRing.zero;;
-let one = IntervalSemiRing.one;;
+let zero = IntervalQuasiRing.zero;;
+let one = IntervalQuasiRing.one;;
 
 
 module PolI = IntervalFlatPoly;;
@@ -247,7 +247,7 @@ let picardOp (yn : solution) (initCond : intervalle list) (phi : 'a vfield) (sVa
   List.map2 (fun iC m -> tm_add (tm_const iC (n+1)) (tm_int i x0 m) (n+1)) initCond toIntegrate;;
 
 let n = 200;;
-let i = (0.,10.);;
+let i = (0.,0.9);;
 let x0 = (thin 0.);;
 let y0 = [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n];;
 let initCond = [zero;one];;
@@ -266,12 +266,12 @@ in let res = aux (y0,its)
    in (aux,PolI.polToFlatList (fst(List.hd res)),snd(List.hd res))
 ;;
 
-let (_,l,e) = iter n 40 y0;;
+let (_,l,e) = iter n 1000 y0;;
 
 e;;
 
 (* here we get a correct value for sin(1) with many correct digits *)
-PolI.eval (PolI.flatListToPol l) (thin (5.));;
+PolI.eval (PolI.flatListToPol l) (thin (0.5));;
 (* PolI.polToString "x" (PolI.flatListToPol l);; *)
 
 (* PolI.polToFlatList (fst(List.hd y5));; *)

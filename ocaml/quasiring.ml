@@ -5,7 +5,7 @@ let makeExp one mul =
     | n (* n odd *) -> let value = (aux x (n/2)) in mul (mul value value) x
   in aux
 
-module type SEMIRING = 
+module type QUASIRING = 
 sig
   type element
   val normal : element -> element
