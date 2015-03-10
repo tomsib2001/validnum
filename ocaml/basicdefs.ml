@@ -202,6 +202,7 @@ struct
   let div = iDiv
   let divides _ _ = false
   let injection i = thin( float_of_int i)
+  let floatInj i = thin i
   let intmul i = mul (injection i)
   let sub = iSub
   let exp = iPow

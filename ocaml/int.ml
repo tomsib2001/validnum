@@ -20,5 +20,6 @@ struct
   let neg = fun x -> (-x)
   let intmul = ( * )
   let injection x = x
+  let floatInj = failwith "a float can not be injected into an int"
   let soe = soi
 end;;

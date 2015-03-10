@@ -23,6 +23,7 @@ sig
   val divides : element -> element -> bool (* this is to better assess whether one can use the above function *)
   val intmul : int -> element -> element
   val injection : int -> element
+  val floatInj : float -> element (* may not be pertinent in some cases *)
   val soe : element -> string
   (* val eos : string -> element *) (* unnecessary for now*)
 end;;
