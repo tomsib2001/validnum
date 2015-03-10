@@ -234,8 +234,17 @@ e;;
 
 type solution = taylorModel list;; (* the type of (candidate) solutions to differential equations *)
 type 'a vfield = 'a elemFun list;; (* the type of vector fields from R n to R n *)
+type 'a diffeq = intervalle * intervalle * 'a vfield  * string list *intervalle list (* X, phi, [y_0,y_1 ..., y_n-1] , initConds *)
 
-let (fieldExample : intervalle vfield) = [Var "x1"; Neg (Var "x0")] (* diff. eq for sin: x'' = - x *)
+
+(* fields for basic functions *)
+let (sinField : intervalle vfield) = [Var "x1"; Neg (Var "x0")] (* diff. eq for sin: x'' = - x *)
+let (expField : intervalle vfield) = [Var "x"];;
+
+(* diffeqs for basic functions *)
+let sinEq = ((0.,1.),zero,sinField,["x0";"x1"],[zero;one] : 'a diffeq);;
+let cosEq = ((0.,1.),zero,sinField,["x0";"x1"],[one;zero] : 'a diffeq);;
+let expEq = ((0.,1.),zero,expField,["x"],[one] : 'a diffeq);;
 
 let applyField (yn : solution) (phi : intervalle vfield) (sVars : string list) i x0 n =
   let table = List.map2 (fun s m -> (s,m)) sVars yn in
@@ -251,28 +260,37 @@ let i = (0.,0.9);;
 let x0 = (thin 0.);;
 let y0 = [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n];;
 let initCond = [zero;one];;
-let y1 = picardOp y0 initCond fieldExample ["x0";"x1"] i x0 n;;
-let y2 = picardOp y1 initCond fieldExample ["x0";"x1"] i x0 (n+1);;
-let y3 = picardOp y2 initCond fieldExample ["x0";"x1"] i x0 (n+2);;
-let y4 = picardOp y3 initCond fieldExample ["x0";"x1"] i x0 (n+3);;
-let y5 = picardOp y4 initCond fieldExample ["x0";"x1"] i x0 (n+4);;
+(* let y1 = picardOp y0 initCond sinField ["x0";"x1"] i x0 n;; *)
+(* let y2 = picardOp y1 initCond sinField ["x0";"x1"] i x0 (n+1);; *)
+(* let y3 = picardOp y2 initCond sinField ["x0";"x1"] i x0 (n+2);; *)
+(* let y4 = picardOp y3 initCond sinField ["x0";"x1"] i x0 (n+3);; *)
+(* let y5 = picardOp y4 initCond sinField ["x0";"x1"] i x0 (n+4);; *)
 
 
 let iter n its y0 =
 let rec aux = function
   | (y,0) -> y
-  | (y,k) -> let ynew = picardOp y initCond fieldExample ["x0";"x1"] i x0 (n+(its-k)) in aux (ynew,k-1)
+  | (y,k) -> let ynew = picardOp y initCond sinField ["x0";"x1"] i x0 (n+(its-k)) in aux (ynew,k-1)
 in let res = aux (y0,its)
    in (aux,PolI.polToFlatList (fst(List.hd res)),snd(List.hd res))
 ;;
 
 let (_,l,e) = iter n 1000 y0;;
 
-e;;
-
-(* here we get a correct value for sin(1) with many correct digits *)
 PolI.eval (PolI.flatListToPol l) (thin (0.5));;
 (* PolI.polToString "x" (PolI.flatListToPol l);; *)
 
 (* PolI.polToFlatList (fst(List.hd y5));; *)
 (* snd(List.hd y5) *)
+
+let solve ((i,x0,phi,sVars,initConds) : 'a diffeq) y0 its =
+  let dim = List.length phi in
+  assert(List.length initConds = dim);
+  assert(List.for_all2 (fun y z -> subset y z) y0 (picardOp y0 initConds phi sVars i x0));
+  let iter n its y0 =
+    let rec aux = function
+      | (y,0) -> y
+      | (y,k) -> let ynew = picardOp y initCond phi ["x0";"x1"] i x0 (n+(its-k)) in aux (ynew,k-1)
+    in let res = aux (y0,its)
+       in (aux,PolI.polToFlatList (fst(List.hd res)),snd(List.hd res))
+  in iter dim its y0
