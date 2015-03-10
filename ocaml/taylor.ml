@@ -262,9 +262,6 @@ let horner_eval mult add zero x l =
 (* test *)
 (* horner_eval (fun x y -> x*y) (+) 0 2 [1;1];; *)
 
-let subset ((a,b): intervalle) ((c,d): intervalle) =
- ((a>=c && b <=d) || (a>=d) && (b<=c));;
-
 let check_enclosure t0 x0 t phi var valinit depth =
   let iFun = function (x:intervalle) -> sym2iFunGen (fun x -> x) (subs (Var var) (Const (valinit x)) phi) in
   let check_int = iPlus (x0) (integralIntBounds (iFun (thin pinf)) depth (thin t0) (t0,t)) in

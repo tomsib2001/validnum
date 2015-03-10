@@ -46,6 +46,8 @@ let interval_to_string (x,y) = "("^(sof x)^","^(sof y)^")";;
 let contientZero (a,b) =
   ((a <= 0.) && (0. <= b)) || ((b < a) && (0. <= b || 0.>= a));;
 
+let subset ((a,b): intervalle) ((c,d): intervalle) =
+ ((a>=c && b <=d) || (a>=d) && (b<=c));;
 
 exception Ensemblevide;;
 let intersection (a,b) (c,d) =
