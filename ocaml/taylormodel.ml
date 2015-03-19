@@ -344,7 +344,7 @@ let solve ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n epsilon
     let rec aux = function
       | (y,0) -> psn "reached max iterations, WARNING!!"; y
       | (y,k) -> 
-	let ynew = picardOp y initConds phi ["x0";"x1"] i x0 (n+(its-k))
+	let ynew = picardOp y initConds phi sVars i x0 (n+(its-k))
 	in let width = diam (computeBoundTM (List.hd ynew) (thin (snd i)) x0) in
 	   if width < epsilon then ynew else
 	     aux (ynew,k-1)
