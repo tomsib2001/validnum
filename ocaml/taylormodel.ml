@@ -326,7 +326,7 @@ assert(not(subset(1.,4.) (2.,5.)));;
 assert(not(subset(2.,4.) (1.,3.)));;
 
 
-let solve ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n =
+let solve ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n epsilon =
   
   (* psn ("in solve: attempting to solve diffeq "^(diffeq_to_string (interval_to_string) (i,x0,phi,sVars,initConds))); *)
   let dim = List.length phi in
@@ -342,17 +342,20 @@ let solve ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n =
   	   [List.hd (picardOp y0 initConds phi sVars i x0 n)]);
   let iter n its y0 =
     let rec aux = function
-      | (y,0) -> y
+      | (y,0) -> psn "reached max iterations, WARNING!!"; y
       | (y,k) -> 
-	let ynew = picardOp y initConds phi ["x0";"x1"] i x0 (n+(its-k)) 
-	in aux (ynew,k-1)
+	let ynew = picardOp y initConds phi ["x0";"x1"] i x0 (n+(its-k))
+	in let width = diam (computeBoundTM (List.hd ynew) (thin (snd i)) x0) in
+	   if width < epsilon then ynew else
+	     aux (ynew,k-1)
     in let res = aux (y0,its)
        in res
   in iter n its y0;;
 
 let n = 10;;
+let epsilon = 1e-10;;
 let sinEq = ((0.75,1.3125),thin 0.75,sinField,["x0";"x1"],[thin(sin 0.75);thin(cos 0.75)] : 'a diffeq);;
-let tL = solve sinEq [tm_const (~-.2.,2.) n;tm_const (~-.2.,2.) n] 10 n;;
+let tL = solve sinEq [tm_const (~-.2.,2.) n;tm_const (~-.2.,2.) n] 10 n epsilon;;
 psn "\n\n\n";;
 List.iter (fun (p,e) -> psn (taylorModelToString (p,e))) tL;;
 
@@ -398,7 +401,7 @@ let get_valid_initial_values
 	(aux newLeftOver y0_new i_new (fuel-1))
   in aux None y0 i fuel;;
 
-let rec solve_bisect ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n maxAttempts =
+let rec solve_bisect ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n maxAttempts epsilon =
   psn ("\n *************************in solve_bisect: attempting to solve diffeq "^(diffeq_to_string (interval_to_string) (i,x0,phi,sVars,initConds)));
     let dim = List.length phi in
     assert(List.length initConds = dim);
@@ -406,7 +409,7 @@ let rec solve_bisect ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) it
     (* notice y0 and i may have changed *)
     let diffeq = (i,x0,phi,sVars,initConds) in
       psn ("\n  in solve_bisect: actually attempting to solve diffeq "^(diffeq_to_string (interval_to_string) (i,x0,phi,sVars,initConds)));
-    let tL = solve diffeq y0 its n in (* a list of Taylor models *)
+    let tL = solve diffeq y0 its n epsilon in (* a list of Taylor models *)
     match optSequel with
     | None -> [tL,i,x0]
     | Some (interv) ->
@@ -424,14 +427,16 @@ let rec solve_bisect ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) it
 	  new_initConds
       in
       psn " ---------------------    new call of solve_bisect";
-      (tL,i,x0)::(solve_bisect (interv,new_x0,phi,sVars,new_initConds) new_y0 its n maxAttempts);;
+      (tL,i,x0)::(solve_bisect (interv,new_x0,phi,sVars,new_initConds) new_y0 its n maxAttempts epsilon);;
 
 let new_sinEq = ((0.,10.),zero,sinField,["x0";"x1"],[zero;one] : 'a diffeq);;
 
-let n = 50;;
+let n = 100;;
+let its = 200;;
+let epsilon = 1e-20;;
 
-let t = solve_bisect new_sinEq [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n] 100 n 50;;
+let t = solve_bisect new_sinEq [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n] its n 500 epsilon;;
 
 List.iter (fun (x,i,x0) -> psn (taylorModelToString (List.hd x)); psn ("i : "^(interval_to_string i)); psn ("x0: "^(interval_to_string x0))) t;;
 
-List.iter (fun (x,i,x0) -> ps (sof (snd i)); ps "  --- "; ps (sof (sin (snd i))); ps " --- "; psn (interval_to_string (computeBoundTM (List.hd x) (thin (snd i)) x0))) t;;
+List.iter (fun (x,i,x0) -> ps (sof (snd i)); ps "  --- "; ps (sof (sin (snd i))); ps " --- "; let value = (computeBoundTM (List.hd x) (thin (snd i)) x0) in ps (interval_to_string value);ps " of diameter "; psn (sof (diam value))) t;;
