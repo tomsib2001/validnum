@@ -47,7 +47,14 @@ let contientZero (a,b) =
   ((a <= 0.) && (0. <= b)) || ((b < a) && (0. <= b || 0.>= a));;
 
 let subset ((a,b): intervalle) ((c,d): intervalle) =
- ((a>=c && b <=d) || (a>=d) && (b<=c));;
+  (c <= a) && (b <= d);;
+(* ((a>=c && b <=d) || (a>=d) && (b<=c));; *)
+
+assert(subset (2.,3.) (1.,4.));;
+assert(subset (1.,2.) (1.,2.));;
+assert(not(subset(1.,4.) (2.,3.)));;
+assert(not(subset(1.,4.) (2.,5.)));;
+assert(not(subset(2.,4.) (1.,3.)));;
 
 exception Ensemblevide;;
 let intersection (a,b) (c,d) =
@@ -69,8 +76,17 @@ let ru x = if x <= 0. then (x *. (1. -. epsilon) +. eta) else (x *. (1. +. epsil
 
 (* basic operations on intervals *)
 
-let iPlus (a,b) (c,d) =  (rd (a +. c), ru (b +. d));;
-let iSub (a,b) (c,d) =  (rd (a -. d), ru (b -. c));;
+let iPlus (a,b) (c,d) =  let lb = a +. c and ub = b +. d in
+			 let newlb = if lb -. c = a then lb else rd lb in
+			 let newub = if ub -. d = b then ub else ru ub in
+			 (newlb,newub);;
+  (* (rd (a +. c), ru (b +. d));; *)
+let iSub (a,b) (c,d) =  
+  let lb = a -. d and ub = b -. c in
+  let newlb = if lb +. d = a then lb else rd lb in
+  let newub = if ub +. c = b then ub else ru ub in
+  (newlb,newub);;
+  (* (rd (a -. d), ru (b -. c));; *)
 let iNeg (a,b) = ((neg b),(neg a));;
 
 let rec minList  = function
@@ -87,10 +103,21 @@ let rec tousMult l1 l2 = match l1 with
   | [] -> []
   | h::t -> (List.map (fun x -> h *. x) l2)@(tousMult t l2);;
 
+let roundMul h x = let preRes = h *. x in 
+		   if preRes /. x = h then 
+		     (preRes,preRes) else
+		     (rd preRes,ru preRes);;
+
+let rec tousMultRound l1 l2 = match l1 with
+  | [] -> []
+  | h::t -> (List.map (fun x -> roundMul h x) l2)@(tousMultRound t l2);;
+
+
 let iMult (a,b) (c,d) = 
-  let l = minList  (tousMult [a;b] [c;d]) in
-  let u = maxList  (tousMult [a;b] [c;d]) in
-  (rd l,ru u);;
+  unoption(List.fold_right unionConvexe (List.map (fun (x,y) -> Some (x,y)) (tousMultRound [a;b] [c;d])) None) 
+(* let l = minList  (tousMult [a;b] [c;d]) in *)
+  (* let u = maxList  (tousMult [a;b] [c;d]) in *)
+  (* (rd l,ru u);; *)
 
 let make_interval x y = (x,y);;
 

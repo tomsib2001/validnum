@@ -18,6 +18,11 @@ type taylorModel = PolI.polynomial * intervalle;;
 let pol (mf : taylorModel) = fst mf;;
 let error (mf : taylorModel) = snd mf;;
 
+let taylorModelToString ((pol,err) : taylorModel) = 
+  let sPol = PolI.polToString "x" pol and
+      sErr = interval_to_string err in
+  "("^sPol^" , "^sErr^", size = "^(soi (PolI.size pol))^")";;
+
 let size (tm : taylorModel) = PolI.degree (fst tm);;
 
 (* computes a valid polynomial bound on the polynomial represented by the sequence l on the interval i - x0  *)
@@ -77,7 +82,7 @@ let tm_add (mf : taylorModel) (mg : taylorModel) n =
   and polg = flatten (PolI.polToList (fst mg)) in
   let l1 = List.length polf 
   and l2 = List.length polg in
-  if l1 <> l2 then failwith (String.concat " " [soi l1; "and";soi l2; "are not the same sizes"]) else
+  if l1 <> l2 then failwith (String.concat " " [soi l1; "and";soi l2; "are not the same sizes"; "\nhere are the taylor models : mf :"; taylorModelToString mf; "\nand mg : " ;taylorModelToString mg]) else
     let rec aux_add res = function
       | ([],[]) -> res
       | ((a,i)::s,(b,j)::t) when i=j -> aux_add ((iPlus a b,i)::res) (s,t)
@@ -242,7 +247,7 @@ let (sinField : intervalle vfield) = [Var "x1"; Neg (Var "x0")] (* diff. eq for 
 let (expField : intervalle vfield) = [Var "x"];;
 
 (* diffeqs for basic functions *)
-let sinEq = ((0.,1.),zero,sinField,["x0";"x1"],[zero;one] : 'a diffeq);;
+let sinEq = ((0.,0.99),zero,sinField,["x0";"x1"],[zero;one] : 'a diffeq);;
 let cosEq = ((0.,1.),zero,sinField,["x0";"x1"],[one;zero] : 'a diffeq);;
 let expEq = ((0.,1.),zero,expField,["x"],[one] : 'a diffeq);;
 
@@ -275,22 +280,56 @@ in let res = aux (y0,its)
    in (aux,PolI.polToFlatList (fst(List.hd res)),snd(List.hd res))
 ;;
 
-let (_,l,e) = iter n 1000 y0;;
+(* let (_,l,e) = iter n 1000 y0;; *)
 
-PolI.eval (PolI.flatListToPol l) (thin (0.5));;
+let computeBound ((p,err) : taylorModel) i x0 =
+  let preRes = PolI.eval p (iSub i x0) in
+  iPlus preRes err;;
+
+(* PolI.eval (PolI.flatListToPol l) (thin (0.5));; *)
 (* PolI.polToString "x" (PolI.flatListToPol l);; *)
 
 (* PolI.polToFlatList (fst(List.hd y5));; *)
 (* snd(List.hd y5) *)
 
-let solve ((i,x0,phi,sVars,initConds) : 'a diffeq) y0 its =
+assert(subset (2.,3.) (1.,4.));;
+assert(subset (1.,2.) (1.,2.));;
+assert(not(subset(1.,4.) (2.,3.)));;
+assert(not(subset(1.,4.) (2.,5.)));;
+assert(not(subset(2.,4.) (1.,3.)));;
+
+
+let solve ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n =
+  psn "\n\nsolving\n";
   let dim = List.length phi in
   assert(List.length initConds = dim);
-  assert(List.for_all2 (fun y z -> subset y z) y0 (picardOp y0 initConds phi sVars i x0));
+  assert(List.for_all2
+  	   (fun (t : taylorModel) z ->
+  	     let i1 =  (computeBound z i x0) in
+  	     let i2 =  (computeBound t i x0) in
+  	     (* psn "i1 : "; print_interval i1; pn(); *)
+  	     (* psn "i2 : "; print_interval i2; pn(); *)
+  	     subset
+  	       i1
+  	       i2)
+  	   [List.hd y0]
+  	   [List.hd (picardOp y0 initConds phi sVars i x0 n)]);
   let iter n its y0 =
     let rec aux = function
       | (y,0) -> y
-      | (y,k) -> let ynew = picardOp y initCond phi ["x0";"x1"] i x0 (n+(its-k)) in aux (ynew,k-1)
+      | (y,k) -> 
+	let ynew = picardOp y initCond phi ["x0";"x1"] i x0 (n+(its-k)) 
+	in aux (ynew,k-1)
     in let res = aux (y0,its)
-       in (aux,PolI.polToFlatList (fst(List.hd res)),snd(List.hd res))
-  in iter dim its y0
+       in ((fst(List.hd res)),snd(List.hd res))
+  in iter n its y0;;
+
+let n = 10;;
+let (p,e) = solve sinEq [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n] 10 n;;
+
+psn (taylorModelToString (p,e));;
+
+let value = 1.;;
+psn (interval_to_string (computeBound (p,e) (thin value) (thin 0.)));;
+psn (sof (sin value));;
+

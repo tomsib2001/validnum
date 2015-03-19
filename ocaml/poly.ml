@@ -12,6 +12,7 @@ sig
   val coeffInjection : int -> coeff
   val zeroPol : polynomial
   val onePol : polynomial
+  val size : polynomial -> int
   val degree : ?safe:bool -> polynomial -> int
   val makePol : (coeff*int) list -> polynomial
   val polToList : polynomial -> (coeff*int) list
@@ -47,7 +48,9 @@ struct
   let (onePol:polynomial) = [(R.one,0)]
   
   let makePol x = x
-  
+    
+  let size p = List.length p;;
+    
   let degree ?(safe=true) p = List.fold_right (fun (x,y) e -> max y e) p (-1)
   
 (* in these two functions we sort coefficients to avoid any unpleasant effects *)
@@ -204,6 +207,8 @@ struct
       | a::t -> if R.eqZero a then (aux t) else (a::t) in
     List.rev (aux (List.rev p));;
 
+  let size p = List.length p;; 
+
      let degree ?(safe=true) (p: polynomial)  = ((List.length (if safe then (clean p) else p) - 1));;
 
   let flatten (p : (coeff*int) list) = 
@@ -311,11 +316,13 @@ struct
         )
 
   let polToString var (p : polynomial) = 
-    let rec aux = function
+    let rec aux nonZero = function (* nonZero is a flag saying whether a nonzero coeff has been found *)
       | [] -> "0\n"
-      | [(a,b)] -> (monomialToString var a b)^"\n"
-      | (a,b)::t -> (monomialToString var a b)^" + "^(aux t)
-    in aux (List.mapi (fun i x -> (x,i)) p);;
+      | [(a,b)] -> 
+	let temp = (if R.eqZero a then (if nonZero then "" else "0P") else (monomialToString var a b)) in temp
+      | (a,b)::t -> let b1 = R.eqZero a in
+	let temp = (if b1 then "" else (monomialToString var a b)^" + ") in temp^(aux (nonZero || not(b1)) t)
+    in aux false (List.mapi (fun i x -> (x,i)) p);;
 
 
   let rec compareMonoms (a,b) (c,d) = b < d
@@ -383,6 +390,8 @@ struct
       | [] -> []
       | a::t -> if R.eqZero a then (aux t) else (a::t) in
     List.rev (aux (List.rev p));;
+
+  let size p = List.length p;;
 
    let degree ?(safe=true) (p: polynomial)  = ((List.length  (if safe then (clean p) else p)) - 1);;
    

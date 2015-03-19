@@ -20,6 +20,6 @@ struct
   let neg = fun x -> (-x)
   let intmul = ( * )
   let injection x = x
-  let floatInj = failwith "a float can not be injected into an int"
+  let floatInj i = let x = (int_of_float i) in if float_of_int x = i then x else failwith "a float can not be injected into an int"
   let soe = soi
 end;;
