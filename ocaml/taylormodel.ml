@@ -239,7 +239,18 @@ e;;
 
 type solution = taylorModel list;; (* the type of (candidate) solutions to differential equations *)
 type 'a vfield = 'a elemFun list;; (* the type of vector fields from R n to R n *)
-type 'a diffeq = intervalle * intervalle * 'a vfield  * string list *intervalle list (* X, phi, [y_0,y_1 ..., y_n-1] , initConds *)
+type 'a diffeq = intervalle * intervalle * 'a vfield  * string list *intervalle list (* X,X0, phi, [y_0,y_1 ..., y_n-1] , initConds *)
+
+let vfield_to_string (a_to_string : 'a -> string) vf =
+  String.concat " " (List.map ( elemFun_to_string a_to_string) vf);;
+
+let diffeq_to_string (a_to_string : 'a -> string) (i,x0,phi,sVars,initConds) =
+  let sI = interval_to_string i in
+  let sX0 = interval_to_string x0 in
+  let sPhi = vfield_to_string a_to_string phi in
+  let sInit = List.mapi (fun i interv -> "f^("^(soi i)^") is initially "^(interval_to_string interv)^"\n") initConds in
+  let order = List.length initConds in
+  String.concat " "(List.concat [[" X = ";sI];[" X0 = ";sX0];["f^(";(soi order);") = ";sPhi;"\n"];sInit]);; 
 
 
 (* fields for basic functions *)
@@ -253,8 +264,9 @@ let expEq = ((0.,1.),zero,expField,["x"],[one] : 'a diffeq);;
 
 let applyField (yn : solution) (phi : intervalle vfield) (sVars : string list) i x0 n =
   let table = List.map2 (fun s m -> (s,m)) sVars yn in
-  let toIntegrate = List.map (get_tm (fun x -> x) table i x0 n) phi
-  in toIntegrate;;
+  let toIntegrate = List.map (get_tm (fun x -> x) table i x0 n) phi in
+  List.iter (fun x -> psn (taylorModelToString x); pn ()) toIntegrate; psn "breakpoint";pn();
+  toIntegrate;;
 
 let picardOp (yn : solution) (initCond : intervalle list) (phi : 'a vfield) (sVars : string list) i x0 n =
   let toIntegrate = applyField yn phi sVars i x0 n in
@@ -282,7 +294,7 @@ in let res = aux (y0,its)
 
 (* let (_,l,e) = iter n 1000 y0;; *)
 
-let computeBound ((p,err) : taylorModel) i x0 =
+let computeBoundTM ((p,err) : taylorModel) i x0 =
   let preRes = PolI.eval p (iSub i x0) in
   iPlus preRes err;;
 
@@ -300,15 +312,14 @@ assert(not(subset(2.,4.) (1.,3.)));;
 
 
 let solve ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n =
-  psn "\n\nsolving\n";
+  
+  (* psn ("in solve: attempting to solve diffeq "^(diffeq_to_string (interval_to_string) (i,x0,phi,sVars,initConds))); *)
   let dim = List.length phi in
   assert(List.length initConds = dim);
   assert(List.for_all2
   	   (fun (t : taylorModel) z ->
-  	     let i1 =  (computeBound z i x0) in
-  	     let i2 =  (computeBound t i x0) in
-  	     (* psn "i1 : "; print_interval i1; pn(); *)
-  	     (* psn "i2 : "; print_interval i2; pn(); *)
+  	     let i1 =  (computeBoundTM z i x0) in
+  	     let i2 =  (computeBoundTM t i x0) in
   	     subset
   	       i1
   	       i2)
@@ -321,15 +332,91 @@ let solve ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n =
 	let ynew = picardOp y initCond phi ["x0";"x1"] i x0 (n+(its-k)) 
 	in aux (ynew,k-1)
     in let res = aux (y0,its)
-       in ((fst(List.hd res)),snd(List.hd res))
+       in res
   in iter n its y0;;
 
 let n = 10;;
-let (p,e) = solve sinEq [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n] 10 n;;
+let sinEq = ((0.75,1.3125),thin 0.75,sinField,["x0";"x1"],[thin(sin 0.75);thin(cos 0.75)] : 'a diffeq);;
+let tL = solve sinEq [tm_const (~-.2.,2.) n;tm_const (~-.2.,2.) n] 10 n;;
+psn "\n\n\n";;
+List.iter (fun (p,e) -> psn (taylorModelToString (p,e))) tL;;
 
-psn (taylorModelToString (p,e));;
+let (p,e) = List.hd tL;;
 
-let value = 1.;;
-psn (interval_to_string (computeBound (p,e) (thin value) (thin 0.)));;
+let value = 1.3125;;
+psn (interval_to_string (computeBoundTM (p,e) (thin value) (thin 0.75)));;
 psn (sof (sin value));;
 
+(* we assume for now that x0 is at the extreme left of the interval i *)
+
+let get_valid_initial_values
+    ((i,x0,phi,sVars,initConds) : 'a diffeq)
+    (y0 : solution)
+    n
+    fuel =
+  let rec aux leftOver y0 i fuel = match fuel with
+    | 0 -> failwith "couldn't manage to find fitting initial values and interval width"
+    | k ->
+      let b = (List.for_all2
+		 (fun (t : taylorModel) z ->
+		   let i1 =  (computeBoundTM z i x0) in
+		   let i2 =  (computeBoundTM t i x0) in
+		   subset
+  		     i1
+  		     i2)
+		 [List.hd y0]
+		 [List.hd (picardOp y0 initConds phi sVars i x0 n)]) in
+      if b then ((y0,i),leftOver) else
+	let y0_new = List.map (fun (p,x) ->
+	  let m = midpoint x
+	  and d = diam x in
+	  (p,makeIntervalle (m -. d) (m +. d))) y0 in
+	let (lx0,ux0) = x0 in
+	let (li,ui) = i in
+	let d2 = diam (ux0,ui) in
+	let i_new =
+	  makeIntervalle lx0 (ux0 +. d2 /. 2.) in
+	let newLeftOver =
+	match leftOver with
+	| None -> (Some (makeIntervalle (ux0 +. d2 /. 2.) ui))
+	| Some (_,ub) -> (Some (makeIntervalle (ux0 +. d2 /. 2.) (max ub ui))) in
+	(aux newLeftOver y0_new i_new (fuel-1))
+  in aux None y0 i fuel;;
+
+let rec solve_bisect ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n maxAttempts =
+  psn ("\n *************************in solve_bisect: attempting to solve diffeq "^(diffeq_to_string (interval_to_string) (i,x0,phi,sVars,initConds)));
+    let dim = List.length phi in
+    assert(List.length initConds = dim);
+    let ((y0,i),optSequel) = get_valid_initial_values (i,x0,phi,sVars,initConds) y0 n maxAttempts in
+    (* notice y0 and i may have changed *)
+    let diffeq = (i,x0,phi,sVars,initConds) in
+      psn ("\n  in solve_bisect: actually attempting to solve diffeq "^(diffeq_to_string (interval_to_string) (i,x0,phi,sVars,initConds)));
+    let tL = solve diffeq y0 its n in (* a list of Taylor models *)
+    match optSequel with
+    | None -> [tL,i,x0]
+    | Some (interv) ->
+      psn ("finished solving on "^(interval_to_string i)^". Trying now on "^(interval_to_string interv));
+      let new_x0 = thin(fst interv) in
+      psn ("new x0 is "^(interval_to_string new_x0));
+      let new_initConds = List.map (fun s -> computeBoundTM s new_x0 x0) tL in
+      let sInit = List.mapi (fun i interv -> "f^("^(soi i)^") will now be initially "^(interval_to_string interv)^"\n") new_initConds in
+      psn (String.concat " " sInit);
+      let new_y0 =
+	List.map
+	  (fun i ->
+	    let m = midpoint i in
+	    tm_const (makeIntervalle (m -. 1.) (m +. 1.)) n)
+	  new_initConds
+      in
+      psn " ---------------------    new call of solve_bisect";
+      (tL,i,x0)::(solve_bisect (interv,new_x0,phi,sVars,new_initConds) new_y0 its n maxAttempts);;
+
+let new_sinEq = ((0.,3.),zero,sinField,["x0";"x1"],[zero;one] : 'a diffeq);;
+
+let n = 30;;
+
+let t = solve_bisect new_sinEq [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n] 10 n 30;;
+
+List.iter (fun (x,i,x0) -> psn (taylorModelToString (List.hd x)); psn ("i : "^(interval_to_string i)); psn ("x0: "^(interval_to_string x0))) t;;
+
+List.iter (fun (x,i,x0) -> ps (sof (fst i)); ps "  --- "; ps (sof (sin (snd i))); ps " --- "; psn (interval_to_string (computeBoundTM (List.hd x) (thin (snd i)) x0))) t;;
