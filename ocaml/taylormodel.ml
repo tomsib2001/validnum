@@ -265,38 +265,53 @@ let expEq = ((0.,1.),zero,expField,["x"],[one] : 'a diffeq);;
 let applyField (yn : solution) (phi : intervalle vfield) (sVars : string list) i x0 n =
   let table = List.map2 (fun s m -> (s,m)) sVars yn in
   let toIntegrate = List.map (get_tm (fun x -> x) table i x0 n) phi in
-  List.iter (fun x -> psn (taylorModelToString x); pn ()) toIntegrate; psn "breakpoint";pn();
+  (* List.iter (fun x -> psn (taylorModelToString x); pn ()) toIntegrate; psn "breakpoint";pn(); *)
   toIntegrate;;
 
 let picardOp (yn : solution) (initCond : intervalle list) (phi : 'a vfield) (sVars : string list) i x0 n =
   let toIntegrate = applyField yn phi sVars i x0 n in
   List.map2 (fun iC m -> tm_add (tm_const iC (n+1)) (tm_int i x0 m) (n+1)) initCond toIntegrate;;
 
-let n = 200;;
-let i = (0.,0.9);;
-let x0 = (thin 0.);;
-let y0 = [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n];;
-let initCond = [zero;one];;
-(* let y1 = picardOp y0 initCond sinField ["x0";"x1"] i x0 n;; *)
-(* let y2 = picardOp y1 initCond sinField ["x0";"x1"] i x0 (n+1);; *)
-(* let y3 = picardOp y2 initCond sinField ["x0";"x1"] i x0 (n+2);; *)
-(* let y4 = picardOp y3 initCond sinField ["x0";"x1"] i x0 (n+3);; *)
-(* let y5 = picardOp y4 initCond sinField ["x0";"x1"] i x0 (n+4);; *)
+let solution_to_string (s : solution) =
+  String.concat " " (List.map (taylorModelToString) s);;
 
-
-let iter n its y0 =
-let rec aux = function
-  | (y,0) -> y
-  | (y,k) -> let ynew = picardOp y initCond sinField ["x0";"x1"] i x0 (n+(its-k)) in aux (ynew,k-1)
-in let res = aux (y0,its)
-   in (aux,PolI.polToFlatList (fst(List.hd res)),snd(List.hd res))
-;;
-
-(* let (_,l,e) = iter n 1000 y0;; *)
 
 let computeBoundTM ((p,err) : taylorModel) i x0 =
   let preRes = PolI.eval p (iSub i x0) in
   iPlus preRes err;;
+  
+
+(* let n = 20;; *)
+(* let i = (0.75,1.5);; *)
+(* let x0 = (thin 0.75);; *)
+(* let y0 = [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n];; *)
+(* psn (solution_to_string y0);; *)
+(* let initCond = [thin (sin 0.75);thin (cos 0.75)];; *)
+(* let y1 = picardOp y0 initCond sinField ["x0";"x1"] i x0 n;; *)
+(* psn (solution_to_string y1);; *)
+(* let y2 = picardOp y1 initCond sinField ["x0";"x1"] i x0 (n+1);; *)
+(* psn (solution_to_string y2);; *)
+(* let y3 = picardOp y2 initCond sinField ["x0";"x1"] i x0 (n+2);; *)
+(* psn (solution_to_string y3);; *)
+(* let y4 = picardOp y3 initCond sinField ["x0";"x1"] i x0 (n+3);; *)
+(* psn (solution_to_string y4);; *)
+(* let y5 = picardOp y4 initCond sinField ["x0";"x1"] i x0 (n+4);; *)
+(* psn (solution_to_string y5);; *)
+
+(* computeBoundTM (List.hd y5) (thin 1.5) x0;; *)
+(* sin 1.5;; *)
+
+(* let iter n its y0 = *)
+(* let rec aux = function *)
+(*   | (y,0) -> y *)
+(*   | (y,k) -> let ynew = picardOp y initCond sinField ["x0";"x1"] i x0 (n+(its-k)) in aux (ynew,k-1) *)
+(* in let res = aux (y0,its) *)
+(*    in ((fst(List.hd res)),snd(List.hd res)) *)
+(* ;; *)
+
+(* let (l,e) = iter n 100 y0;; *)
+
+(* computeBoundTM (l,e) (thin 1.5) x0;; *)
 
 (* PolI.eval (PolI.flatListToPol l) (thin (0.5));; *)
 (* PolI.polToString "x" (PolI.flatListToPol l);; *)
@@ -329,7 +344,7 @@ let solve ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n =
     let rec aux = function
       | (y,0) -> y
       | (y,k) -> 
-	let ynew = picardOp y initCond phi ["x0";"x1"] i x0 (n+(its-k)) 
+	let ynew = picardOp y initConds phi ["x0";"x1"] i x0 (n+(its-k)) 
 	in aux (ynew,k-1)
     in let res = aux (y0,its)
        in res
@@ -411,12 +426,12 @@ let rec solve_bisect ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) it
       psn " ---------------------    new call of solve_bisect";
       (tL,i,x0)::(solve_bisect (interv,new_x0,phi,sVars,new_initConds) new_y0 its n maxAttempts);;
 
-let new_sinEq = ((0.,3.),zero,sinField,["x0";"x1"],[zero;one] : 'a diffeq);;
+let new_sinEq = ((0.,10.),zero,sinField,["x0";"x1"],[zero;one] : 'a diffeq);;
 
-let n = 30;;
+let n = 50;;
 
-let t = solve_bisect new_sinEq [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n] 10 n 30;;
+let t = solve_bisect new_sinEq [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n] 100 n 50;;
 
 List.iter (fun (x,i,x0) -> psn (taylorModelToString (List.hd x)); psn ("i : "^(interval_to_string i)); psn ("x0: "^(interval_to_string x0))) t;;
 
-List.iter (fun (x,i,x0) -> ps (sof (fst i)); ps "  --- "; ps (sof (sin (snd i))); ps " --- "; psn (interval_to_string (computeBoundTM (List.hd x) (thin (snd i)) x0))) t;;
+List.iter (fun (x,i,x0) -> ps (sof (snd i)); ps "  --- "; ps (sof (sin (snd i))); ps " --- "; psn (interval_to_string (computeBoundTM (List.hd x) (thin (snd i)) x0))) t;;
