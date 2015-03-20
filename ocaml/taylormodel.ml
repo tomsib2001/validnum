@@ -429,14 +429,57 @@ let rec solve_bisect ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) it
       psn " ---------------------    new call of solve_bisect";
       (tL,i,x0)::(solve_bisect (interv,new_x0,phi,sVars,new_initConds) new_y0 its n maxAttempts epsilon);;
 
-let new_sinEq = ((0.,10.),zero,sinField,["x0";"x1"],[zero;one] : 'a diffeq);;
+let new_sinEq = ((0.,7.),zero,sinField,["x0";"x1"],[zero;one] : 'a diffeq);;
 
-let n = 100;;
-let its = 200;;
-let epsilon = 1e-20;;
+let n = 50;;
+let its = 50;;
+let epsilon = 1e-5;;
 
 let t = solve_bisect new_sinEq [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n] its n 500 epsilon;;
 
 List.iter (fun (x,i,x0) -> psn (taylorModelToString (List.hd x)); psn ("i : "^(interval_to_string i)); psn ("x0: "^(interval_to_string x0))) t;;
 
 List.iter (fun (x,i,x0) -> ps (sof (snd i)); ps "  --- "; ps (sof (sin (snd i))); ps " --- "; let value = (computeBoundTM (List.hd x) (thin (snd i)) x0) in ps (interval_to_string value);ps " of diameter "; psn (sof (diam value))) t;;
+
+let cut i eps =
+  let rec aux res  = function
+    | x when diam x < eps -> (fst x)::res
+    | (a,b) -> let ub = a +. eps in aux ((a)::res) (ub,b)
+  in (aux [] i);; 
+
+
+let outputPlot epsilon oc (sol : (solution*intervalle*intervalle) list) =
+  output_string oc "import matplotlib.pyplot as plt\n";
+  let rec aux points imlow imup = function
+    | [] -> (List.rev points,List.rev imlow,List.rev imup)
+    | (tL,i,x0)::t -> 
+      let pointList = cut i epsilon in
+      let tm = List.hd tL in
+      let images = List.map (fun p -> (p,computeBoundTM tm  (thin p) (thin (fst i)))) pointList in
+      let images1 = List.map (fun (p,x) -> (p,fst x)) images in
+      let images2 = List.map (fun (p,x) -> (p,snd x)) images in
+      aux (pointList@points) (images1@imlow) (images2@imup) t in
+  let (pointList,images1,images2) = aux [] [] [] sol in
+      output_string oc "points = [";
+      List.iter (fun (p) -> 
+	output_string oc 
+	  ((sof p)^",")) 
+	pointList;
+      output_string oc "]\n";
+      output_string oc "imagesLow = [";
+      List.iter (fun (p,a) -> 
+	output_string oc 
+	  ((sof a)^",")) 
+	images1;
+      output_string oc "]\n";
+      output_string oc "imagesUp = [";
+      List.iter (fun (p,a) -> 
+	output_string oc 
+	  ((sof a)^",")) 
+	images2;
+      output_string oc "]\n";
+      output_string oc "plt.plot(points,imagesLow,'red')\nplt.plot(points,imagesUp,'green')\nplt.show()";;
+  
+let f = open_out "plot.py";;
+
+outputPlot 0.01 f t;;
