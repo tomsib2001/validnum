@@ -371,6 +371,7 @@ let get_valid_initial_values
     ((i,x0,phi,sVars,initConds) : 'a diffeq)
     (y0 : solution)
     n
+    max_width
     fuel =
   let rec aux leftOver y0 i fuel = match fuel with
     | 0 -> failwith "couldn't manage to find fitting initial values and interval width"
@@ -384,7 +385,7 @@ let get_valid_initial_values
   		     i2)
 		 [List.hd y0]
 		 [List.hd (picardOp y0 initConds phi sVars i x0 n)]) in
-      if b then ((y0,i),leftOver) else
+      if (b && (diam i < max_width)) then ((y0,i),leftOver) else
 	let y0_new = List.map (fun (p,x) ->
 	  let m = midpoint x
 	  and d = diam x in
@@ -401,11 +402,11 @@ let get_valid_initial_values
 	(aux newLeftOver y0_new i_new (fuel-1))
   in aux None y0 i fuel;;
 
-let rec solve_bisect ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n maxAttempts epsilon =
+let rec solve_bisect ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) its n maxAttempts epsilon max_width =
   psn ("\n *************************in solve_bisect: attempting to solve diffeq "^(diffeq_to_string (interval_to_string) (i,x0,phi,sVars,initConds)));
     let dim = List.length phi in
     assert(List.length initConds = dim);
-    let ((y0,i),optSequel) = get_valid_initial_values (i,x0,phi,sVars,initConds) y0 n maxAttempts in
+    let ((y0,i),optSequel) = get_valid_initial_values (i,x0,phi,sVars,initConds) y0 n max_width maxAttempts in
     (* notice y0 and i may have changed *)
     let diffeq = (i,x0,phi,sVars,initConds) in
       psn ("\n  in solve_bisect: actually attempting to solve diffeq "^(diffeq_to_string (interval_to_string) (i,x0,phi,sVars,initConds)));
@@ -423,23 +424,29 @@ let rec solve_bisect ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) it
 	List.map
 	  (fun i ->
 	    let m = midpoint i in
-	    tm_const (makeIntervalle (m -. 1.) (m +. 1.)) n)
+	    tm_const (makeIntervalle (m -. 2.) (m +. 2.)) n)
 	  new_initConds
       in
       psn " ---------------------    new call of solve_bisect";
-      (tL,i,x0)::(solve_bisect (interv,new_x0,phi,sVars,new_initConds) new_y0 its n maxAttempts epsilon);;
+      (tL,i,x0)::(solve_bisect (interv,new_x0,phi,sVars,new_initConds) new_y0 its n maxAttempts epsilon max_width);;
 
-let new_sinEq = ((0.,7.),zero,sinField,["x0";"x1"],[zero;one] : 'a diffeq);;
+let new_sinEq = ((0.,3.5),zero,sinField,["x0";"x1"],[(1. -. 0.125,1. +. 0.125);(0. -. 0.125,0. +. 0.125)] : 'a diffeq);;
+let new_expEq = ((0.,3.),zero,expField,["x"],[one] : 'a diffeq);;
 
-let n = 50;;
+let n = 30;;
 let its = 50;;
-let epsilon = 1e-5;;
+let epsilon = 0.01;;
+let maxAttempts = 15;;
+let maxWidth = 0.002;;
 
-let t = solve_bisect new_sinEq [tm_const (~-.1.,1.) n;tm_const (~-.1.,1.) n] its n 500 epsilon;;
+let t = solve_bisect new_sinEq [tm_const (~-.2.,2.) n;tm_const (~-.2.,2.) n] its n maxAttempts epsilon maxWidth;;
+(* let t = solve_bisect new_expEq [tm_const (~-.1.,1.) n] its n 500 epsilon;; *)
 
-List.iter (fun (x,i,x0) -> psn (taylorModelToString (List.hd x)); psn ("i : "^(interval_to_string i)); psn ("x0: "^(interval_to_string x0))) t;;
 
-List.iter (fun (x,i,x0) -> ps (sof (snd i)); ps "  --- "; ps (sof (sin (snd i))); ps " --- "; let value = (computeBoundTM (List.hd x) (thin (snd i)) x0) in ps (interval_to_string value);ps " of diameter "; psn (sof (diam value))) t;;
+(* List.iter (fun (x,i,x0) -> psn (taylorModelToString (List.hd x)); psn ("i : "^(interval_to_string i)); psn ("x0: "^(interval_to_string x0))) t;; *)
+
+let f = sin in
+List.iter (fun (x,i,x0) -> ps (sof (snd i)); ps "  --- "; ps (sof (f (snd i))); ps " --- "; let value = (computeBoundTM (List.hd x) (thin (snd i)) x0) in ps (interval_to_string value);ps " of diameter "; psn (sof (diam value))) t;;
 
 let cut i eps =
   let rec aux res  = function
