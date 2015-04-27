@@ -1,5 +1,5 @@
 (* intervals and rounding *)
-
+open Printing;;
 open Quasiring;;
 
 type intervalle = float*float (* essentiellement pour décorer et savoir de quoi on parle *)
@@ -33,9 +33,27 @@ let unoption = function
 
 let convex_hull x y = unoption(unionConvexe x y);;
 
+let convex_hull2 x y = convex_hull (Some x) (Some y);;
+
+let is_empty ((a,b) : intervalle) = b < a;;
+
+let split ((a,b) : intervalle) = 
+  let c = midpoint (a,b) in
+  ((a,c),(c,b));;
+
 (* maximum element in absolute value of an interval *)
 let abs_max (a,b) = max (abs_float a) (abs_float b);;
 
+let leq  ((a,b) : intervalle) ((c,d) : intervalle) =
+   b <= c;;
+
+let lt   ((a,b) : intervalle) ((c,d) : intervalle) =
+  b < c;;
+
+let geq x y = leq y x;;
+let gt x y = lt y x;;
+
+let neq x y = lt x y || lt y x;;
 
 let iof = int_of_float
 let foi = float_of_int
@@ -58,8 +76,8 @@ assert(not(subset(2.,4.) (1.,3.)));;
 
 exception Ensemblevide;;
 let intersection (a,b) (c,d) =
-  if (b < c) ||(d < a) then 
-    raise Ensemblevide 
+  if (b < c) || (d < a) then
+    raise Ensemblevide
   else
     let l = max a c and u = min b d in (l,u);; 
 
@@ -174,6 +192,11 @@ let iExp = monfun2iFun true exp;;
 
 let iLog = monfun2iFun true log;;
 
+let iSqrt x = 
+  let aux = monfun2iFun true sqrt in
+  intersection (aux x) (0.,pinf) (* if there are negative bounds, there will be a nan anyways *)
+;;
+
 (* float and interval power functions *)
 
 let rec pow x = function
@@ -185,7 +208,7 @@ let iPow (a,b) n = match (n mod 2) with
   | _ (* 0 *) -> if n = 0 then (1.,1.) else
       let u = min (abs_float a) (abs_float b) and
 	  v = max (abs_float a) (abs_float b) in
-      ((pow u n),pow v n);;
+      ((if contientZero (a,b) then 0. else pow u n),pow v n);;
 
 (* definition of an extension of the sin *)
 

@@ -439,14 +439,14 @@ let epsilon = 0.01;;
 let maxAttempts = 15;;
 let maxWidth = 0.002;;
 
-let t = solve_bisect new_sinEq [tm_const (~-.2.,2.) n;tm_const (~-.2.,2.) n] its n maxAttempts epsilon maxWidth;;
+(* let t = solve_bisect new_sinEq [tm_const (~-.2.,2.) n;tm_const (~-.2.,2.) n] its n maxAttempts epsilon maxWidth;; *)
 (* let t = solve_bisect new_expEq [tm_const (~-.1.,1.) n] its n 500 epsilon;; *)
 
 
 (* List.iter (fun (x,i,x0) -> psn (taylorModelToString (List.hd x)); psn ("i : "^(interval_to_string i)); psn ("x0: "^(interval_to_string x0))) t;; *)
 
-let f = sin in
-List.iter (fun (x,i,x0) -> ps (sof (snd i)); ps "  --- "; ps (sof (f (snd i))); ps " --- "; let value = (computeBoundTM (List.hd x) (thin (snd i)) x0) in ps (interval_to_string value);ps " of diameter "; psn (sof (diam value))) t;;
+(* let f = sin in *)
+(* List.iter (fun (x,i,x0) -> ps (sof (snd i)); ps "  --- "; ps (sof (f (snd i))); ps " --- "; let value = (computeBoundTM (List.hd x) (thin (snd i)) x0) in ps (interval_to_string value);ps " of diameter "; psn (sof (diam value))) t;; *)
 
 let cut i eps =
   let rec aux res  = function
@@ -489,4 +489,4 @@ let outputPlot epsilon oc (sol : (solution*intervalle*intervalle) list) =
   
 let f = open_out "plot.py";;
 
-outputPlot 0.01 f t;;
+(* outputPlot 0.01 f t;; *)
