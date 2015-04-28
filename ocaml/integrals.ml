@@ -48,5 +48,9 @@ let int_iFun iF depth a b =
 let integralIntBounds iF depth (a,b) (c,d) =
   let sab = (abs_float (b -. a)) *. abs_max (iF (a,b)) and
       scd = (abs_float (d -. c)) *. abs_max (iF (c,d)) in
-  iPlus (neg sab,sab)
-    (iPlus (int_iFun iF depth b c) (neg scd,scd));;
+  let res = 
+    iPlus (neg sab,sab)
+      (iPlus (int_iFun iF depth b c) (neg scd,scd)) in
+  (* let overestimation = (iMult (iSub (c,d) (a,b)) (iF (a,d))) in *)
+  (* assert(subset res overestimation); *) res (* this assertion is false, left as comment to remind everyone *)
+;;
