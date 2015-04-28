@@ -94,9 +94,9 @@ let epsilon = epsilon_float
 let eta = min_float
 
 (* Round down *)
-let rd x = if x < 0. then (x *. (1. +. epsilon) -. eta) else (x *. (1. -. epsilon) -. eta);;
+let rd x = x;; (* if x < 0. then (x *. (1. +. epsilon) -. eta) else (x *. (1. -. epsilon) -. eta);; *)
 (* Round up *)
-let ru x = if x <= 0. then (x *. (1. -. epsilon) +. eta) else (x *. (1. +. epsilon) +. eta);;
+let ru x = x;; (* if x <= 0. then (x *. (1. -. epsilon) +. eta) else (x *. (1. +. epsilon) +. eta);; *)
 
 (* basic operations on intervals *)
 
