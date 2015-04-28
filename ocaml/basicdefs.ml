@@ -4,6 +4,9 @@ open Quasiring;;
 
 type intervalle = float*float (* essentiellement pour décorer et savoir de quoi on parle *)
 
+let bot (x : intervalle) = fst x;;
+let top (x : intervalle) = snd x;;
+
 let makeIntervalle (f1 : float) (f2 : float) = ((f1,f2) : intervalle);;
 
 let print_interval (a,b) =
@@ -52,6 +55,9 @@ let lt   ((a,b) : intervalle) ((c,d) : intervalle) =
 
 let geq x y = leq y x;;
 let gt x y = lt y x;;
+
+let iMax ((a,b) : intervalle) ((c,d) : intervalle) = 
+  (max a c, max b d);;
 
 let neq x y = lt x y || lt y x;;
 

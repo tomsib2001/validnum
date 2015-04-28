@@ -43,16 +43,19 @@ let rec formalDer int2Const zero one var =
   function
     | Const c -> Const zero
     | Var s -> if s = var then Const one else Var s
-    | Plus(f1,f2) -> Plus(formalDer int2Const zero one var  f1,formalDer int2Const zero one var  f2)
-    | Sub(f1,f2) -> Sub(formalDer int2Const zero one var  f1,formalDer int2Const zero one var  f2)
-    | Mult(f1,f2) -> Plus(mult(f1,formalDer int2Const zero one var  f2),mult(formalDer int2Const zero one var  f1, f2))
-    | Div(f1,f2) -> Div(Sub(mult(formalDer int2Const zero one var  f1,f2),mult(f1,formalDer int2Const zero one var  f2)),mult(f2,f2))
-    | Neg f1 -> Neg (formalDer int2Const zero one var  f1)
-    | Cos f1 -> Neg (mult(formalDer int2Const zero one var  f1, Sin f1))
+    | Plus(f1,f2) -> Plus(formalDer int2Const zero one var f1,formalDer int2Const zero one var f2)
+    | Sub(f1,f2) -> Sub(formalDer int2Const zero one var f1,formalDer int2Const zero one var f2)
+    | Mult(f1,f2) -> Plus(mult(f1,formalDer int2Const zero one var f2),mult(formalDer int2Const zero one var f1, f2))
+    | Div(f1,f2) -> Div(Sub(mult(formalDer int2Const zero one var f1,f2),mult(f1,formalDer int2Const zero one var f2)),mult(f2,f2))
+    | Neg f1 -> Neg (formalDer int2Const zero one var f1)
+    | Sqrt f1 -> 
+      Div (formalDer int2Const zero one var f1,
+	(mult (Const (int2Const 2),(Sqrt f1))))
+    | Cos f1 -> Neg (mult(formalDer int2Const zero one var f1, Sin f1))
     | Sin f1 -> mult(formalDer int2Const zero one var f1, Cos f1)
     | Exp f1 -> mult(formalDer int2Const zero one var f1, Exp f1)
     | Log f1 -> Div(formalDer int2Const zero one var f1, f1)
-    | Pow(f1,i) -> mult(Const (int2Const i), mult(formalDer int2Const zero one var  f1,Pow(f1,i-1)))
+    | Pow(f1,i) -> mult(Const (int2Const i), mult(formalDer int2Const zero one var f1,Pow(f1,i-1)))
     | VarFun(f1,k,x) -> let xp = formalDer int2Const zero one var  x in mult(xp,VarFun(f1,k+1,x))
 ;;
 
@@ -82,6 +85,7 @@ let rec subs x0 x1 = function
   | Sub(f1,f2) -> Sub(subs x0 x1 f1,subs x0 x1 f2)
   | Div(f1,f2) -> Div(subs x0 x1 f1,subs x0 x1 f2)
   | Neg f1 -> Neg (subs x0 x1 f1)
+  | Sqrt f1 -> Sqrt (subs x0 x1 f1)
   | Cos f1 -> Cos (subs x0 x1 f1)
   | Sin f1 -> Sin (subs x0 x1 f1)
   | Exp f1 -> Exp (subs x0 x1 f1)
@@ -208,7 +212,7 @@ let iCosBis x = let (a,b) = getTaylorApproxInterval "x" 8 (Cos (Var "x")) (0.) x
 
 let rec isConstantFunction f = 
   let id = fun x -> x in
-  makeF (fun x -> true) (fun x -> false) (&&) (&&) id (&&) (&&) id id id id (fun (x,y) -> x) (fun f i x -> false) f ();;
+  makeF (fun x -> true) (fun x -> false) (&&) (&&) id (&&) (&&) id id id id id (fun (x,y) -> x) (fun f i x -> false) f ();;
 
 isConstantFunction f;;
 isConstantFunction (subs (Var "x") (Const 3.) f);;
