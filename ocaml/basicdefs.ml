@@ -47,19 +47,19 @@ let split ((a,b) : intervalle) =
 (* maximum element in absolute value of an interval *)
 let abs_max (a,b) = max (abs_float a) (abs_float b);;
 
-let leq  ((a,b) : intervalle) ((c,d) : intervalle) =
+let iLeq  ((a,b) : intervalle) ((c,d) : intervalle) =
    b <= c;;
 
-let lt   ((a,b) : intervalle) ((c,d) : intervalle) =
+let iLt   ((a,b) : intervalle) ((c,d) : intervalle) =
   b < c;;
 
-let geq x y = leq y x;;
-let gt x y = lt y x;;
+let iGeq x y = iLeq y x;;
+let iGt x y = iLt y x;;
 
 let iMax ((a,b) : intervalle) ((c,d) : intervalle) = 
   (max a c, max b d);;
 
-let neq x y = lt x y || lt y x;;
+let iNeq x y = iLt x y || iLt y x;;
 
 let iof = int_of_float
 let foi = float_of_int
