@@ -312,6 +312,8 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
 
   print_step 9;
   let w_base = integralIntBounds (dvmin hi fi ymin) idepth z1 z3 in
+  psn "w_base : ";
+  print_interval w_base; pn();
   let w_i = iPlus w_ends w_base in
   let w_0 = 
     iPlus
@@ -320,6 +322,10 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
 	 (integralIntBounds (dvmax h0 f0) idepth z4 z2)
 	 w_base
       ) in
+  psn "w_i : ";
+  print_interval w_i; pn();
+  psn "w_0 : ";
+  print_interval w_0; pn();
   if iNeq w_i w_0 then reject() else noresult();;
 
 
