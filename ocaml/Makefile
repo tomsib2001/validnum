@@ -137,12 +137,12 @@ SMLIY = $(SOURCES:.mly=.ml)
 SMLIYL = $(SMLIY:.mll=.ml)
 SMLYL = $(filter %.ml,$(SMLIYL))
 OBJS = $(SMLYL:.ml=.cmo)
-OPTOBJS = $(OBJS:.cmx=.cmx)
+OPTOBJS = $(OBJS:.cmo=.cmx)
 
 $(EXEC): $(OBJS) 
 	$(CAMLC) $(CUSTOM) -o $(EXEC) $(LIBS) $(OBJS)
 
-$(EXEC)-opt: $(OPTOBJS)
+$(EXEC).opt: $(OPTOBJS)
 	$(CAMLOPT) -o $(EXEC) $(LIBS:.cma=.cmxa) $(OPTOBJS)
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .mly 
