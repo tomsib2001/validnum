@@ -46,7 +46,7 @@ let int_iFun iF depth a b =
 (* now we integrate with interval bounds. For a formal justification of what is done here, see the latex file *)
 
 let integralIntBounds iF depth (a,b) (c,d) =
-  assert(iLeq (a,b) (c,d));
+  (* assert(iLeq (a,b) (c,d)); *)
   let sab = (abs_float (b -. a)) *. abs_max (iF (a,b)) and
       scd = (abs_float (d -. c)) *. abs_max (iF (c,d)) in
   let res = 

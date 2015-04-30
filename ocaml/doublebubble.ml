@@ -19,12 +19,14 @@ exception Reject;;
 exception NoResult;;
 exception Continue;;
 
-let reject () = raise Reject;;
+let t = Array.make 9 0;;
+
+let reject i = t.(i-1) <- t.(i-1) + 1; raise Reject;;
 let noresult () = raise NoResult;;
 
-let print_step i = match i with
-  | 1 -> psn "trying step 1.."
-  | k -> psn ("failed at step "^(soi (i-1))^", attempting step "^(soi i)^"...");;
+let print_step i = () ;;(* match i with *)
+  (* | 1 -> psn "trying step 1.." *)
+  (* | k -> psn ("failed at step "^(soi (i-1))^", attempting step "^(soi i)^"...");; *)
 
 let iSqrt x =
   let newx = intersection x (0.,infinity) in
@@ -77,8 +79,8 @@ let dxmin (* z *) h f ymin =
   sym2iFunGen (fun x -> x) pre_dxmin;;
 
 let (dxmax_sym : intervalle elemFun) = 
-  let y = Sub(Var "Y_min",Pow(Var "Z",2)) in
-  let t = Sub(Mult(Var "H",Pow(Var "y",2)),Var "F") in
+  let y = Sub(Var "Y_max",Pow(Var "Z",2)) in
+  let t = Sub(Mult(Var "H",Pow(y,2)),Var "F") in
   let youtermin = Div(
     Var "F",
     Plus(
@@ -105,9 +107,9 @@ let (dxmax_sym : intervalle elemFun) =
 psn "dxmax : ";;
 psn (elemFun_to_string interval_to_string dxmax_sym);;
 
-let dxmax (* z *) h f =   
+let dxmax (* z *) h f ymax =   
   let pre_dxmax = 
-    List.fold_right (fun (x,y) z -> subs (Var x) (Const y) z) ["H",h;"F",f] dxmax_sym in
+    List.fold_right (fun (x,y) z -> subs (Var x) (Const y) z) ["H",h;"F",f;"Y_max",ymax] dxmax_sym in
   sym2iFunGen (fun x -> x) pre_dxmax;;
 
 let dv_sym = Mult(Pow(Var "Y",2),dx_sym);;
@@ -159,9 +161,9 @@ let dvmax_sym =
 psn "dvmax : ";;
 psn (elemFun_to_string interval_to_string dvmax_sym);;
 
-let dvmax (* z *) h f = 
+let dvmax (* z *) h f ymax = 
   let pre_dvmax = 
-    List.fold_right (fun (x,y) z -> subs (Var x) (Const y) z) ["H",h;"F",f] dvmax_sym in
+    List.fold_right (fun (x,y) z -> subs (Var x) (Const y) z) ["H",h;"F",f;"Y_max",ymax] dvmax_sym in
   sym2iFunGen (fun x -> x) pre_dvmax;;
 
 
@@ -170,7 +172,7 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
 
   print_step 1;
   if (iGeq (iMult i1000 c1) i996) && (iLeq (iMult five h0) (one)) then
-    reject ();
+    reject 1;
   
   (* step 2 *)
   
@@ -198,7 +200,7 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
       (iSub one (iSqr c1))
   in 
   (* print_interval (iPlus (iPow c2 2) t); pn(); *)
-  if iNeq (iPlus (iPow c2 2) t) one then reject();
+  if iNeq (iPlus (iPow c2 2) t) one then reject 2;
 
 (* step 3 *)
 
@@ -208,7 +210,7 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
     (iDiv
        (iSub (iMult (iSub hi one) (y2)) (iDiv fi y2))
        (iSqrt three)) in
-  if is_empty c2 then reject();
+  if is_empty c2 then reject 3;
 
 (* step 4 *)
 
@@ -218,7 +220,7 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
        one
        (iMult (iSqrt three) (iDiv c1 y1))
     )
-  then reject ();
+  then reject 4;
 
 (* step 5 *)
 
@@ -255,7 +257,7 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
 	  (iPlus y (iDiv (iSqrt (three)) (two)))
 	  (iSqr r)
        ) in
-     if iLt w w_ends then reject());
+     if iLt w w_ends then reject 6);
 
 (* step 7 *)
 
@@ -280,13 +282,13 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
 	iPlus 
 	  delta_0
 	  (integralIntBounds (dx h0 f0) idepth (thin t) y4) in
-      if iGt delta_0 delta_i then reject();
+      if iGt delta_0 delta_i then reject 7;
       let delta_0 = 
 	iPlus
 	  delta_0
-	  (integralIntBounds (dxmax h0 f0) idepth z4 z2)
+	  (integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2)
       in
-      if iGt delta_0 delta_i then reject();
+      if iGt delta_0 delta_i then reject 7;
       if contient c1 1. then noresult();
     end;
 
@@ -301,47 +303,53 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
   let z3 = iSqrt(iSub y2 ymin) in
   let delta_i = integralIntBounds (dxmin hi fi ymin) idepth z1 z3 in
   let delta_0 = integralIntBounds (dx h0 f0) idepth y1 y4 in
-  if iLt delta_i delta_0 then reject();
+  if iLt delta_i delta_0 then reject 8;
   let delta_0 = 
     iPlus 
       delta_0 
-      (integralIntBounds (dxmax h0 f0) idepth z4 z2) in
-  if iNeq delta_i delta_0 then reject();
+      (integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2) in
+  if iNeq delta_i delta_0 then reject 8;
 
 (* step 9 *)
 
   print_step 9;
   let w_base = integralIntBounds (dvmin hi fi ymin) idepth z1 z3 in
-  psn "w_base : ";
-  print_interval w_base; pn();
+  (* psn "w_base : "; *)
+  (* print_interval w_base; pn(); *)
   let w_i = iPlus w_ends w_base in
+  let i1 = (integralIntBounds (dv h0 f0) idepth y1 y4) in
+  let i2 = (integralIntBounds (dvmax h0 f0 ymax) idepth z4 z2) in
+  (* psn "i1 : "; *)
+  (* print_interval i1; pn(); *)
+  (* psn "i2 : "; *)
+  (* print_interval i2; pn(); *)
   let w_0 = 
     iPlus
       (integralIntBounds (dv h0 f0) idepth y1 y4)
       (iSub
-	 (integralIntBounds (dvmax h0 f0) idepth z4 z2)
+	 (integralIntBounds (dvmax h0 f0 ymax) idepth z4 z2)
 	 w_base
       ) in
-  psn "w_i : ";
-  print_interval w_i; pn();
-  psn "w_0 : ";
-  print_interval w_0; pn();
-  if iNeq w_i w_0 then reject() else noresult();;
+  (* psn "w_i : "; *)
+  (* print_interval w_i; pn(); *)
+  (* psn "w_0 : "; *)
+  (* print_interval w_0; pn(); *)
+  if iNeq w_i w_0 then reject 9 else noresult();;
 
 
 let rec divideAndCheckRectangle y1 h0 idepth fuel =
-  psn "entering divideAndCheckRectangle: ";
-  ps "y1 : ";
-  print_interval y1;
-  pn ();
-  ps "h0 : ";
-  print_interval h0;
-  pn();
+  (* psn "entering divideAndCheckRectangle: "; *)
+  (* ps "y1 : "; *)
+  (* print_interval y1; *)
+  (* pn (); *)
+  (* ps "h0 : "; *)
+  (* print_interval h0; *)
+  (* pn(); *)
   match fuel with
   | 0 -> failwith "reached max fuel. stopping"
   | k ->
     let c1 = iSqrt (iSub one (iSqr y1)) in
-    psn "c1 : "; print_interval c1; pn();
+    (* psn "c1 : "; print_interval c1; pn(); *)
     (try check_rectangle c1 h0 idepth with
     | Reject -> true
     | NoResult ->
@@ -359,9 +367,17 @@ let main idepth =
   if
     divideAndCheckRectangle y1 h0 idepth 15
   then
-    psn "all rejected"
+    let count = ref 0 in
+    begin
+      for i =1 to 9 do
+	psn ((soi (t.(i-1)))^" rejected at step "^(soi i));
+	count := !count + t.(i-1);
+      done;
+      psn ("total number of rectangles with integrals at depth "^(soi idepth)^": "^(soi !count));
+      psn "all rejected"
+    end
   else
     psn "we have a problem here";;
 
-main 6;;
+main 5;;
 
