@@ -286,6 +286,41 @@ match goal with
 
 Ltac integral_tac prec depth :=
   match goal with
+    (* TODO: fix next line and then add similar ones *)
+    (* | |- Rge _ _ => *)
+    (*   apply Rle_ge; integral_tac prec depth *)
+    | |- Rle ?a (RInt ?f ?ra ?rb) =>
+      let v := Private.get_float a in
+      let w := F.nan in
+      let lb := Private.get_float ra in
+      let ub := Private.get_float rb in
+      let f' := (eval cbv beta in (f reify_var))
+      in 
+      match Private.extract_algorithm f' (reify_var::List.nil) with
+        | (?formul,_::?const) => 
+          let formula := fresh "formula" in
+          pose (formula := formul);
+            let bounds := fresh "bounds" in
+            let toto1 := get_bounds const in 
+            pose (bounds := toto1);
+              apply (integral_correct_ter prec depth lb ub (I.bnd v w) formula bounds) end
+
+    | |- Rle (RInt ?f ?ra ?rb) ?c => 
+      let v := F.nan in
+      let w := Private.get_float c in
+      let lb := Private.get_float ra in
+      let ub := Private.get_float rb in
+      let f' := (eval cbv beta in (f reify_var))
+      in 
+      match Private.extract_algorithm f' (reify_var::List.nil) with
+        | (?formul,_::?const) => 
+          let formula := fresh "formula" in
+          pose (formula := formul);
+            let bounds := fresh "bounds" in
+            let toto1 := get_bounds const in 
+            pose (bounds := toto1);
+              apply (integral_correct_ter prec depth lb ub (I.bnd v w) formula bounds) end
+
     | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
       let v := Private.get_float a in
       let w := Private.get_float c in
@@ -504,15 +539,47 @@ end.
 
 
 
-(* Lemma test2 (f := fun x : R => Rtrigo_def.exp x) : (0 <= RInt f 0 1 <= 23/8)%R. *)
-(* Proof. *)
-(* pose g (x : I.type) := FInt.exp prec10 x. *)
-(* pose prec : F.precision := prec10. *)
-(* pose depth : nat := 1%nat. *)
-(* rewrite /f. *)
-(* integral_tac prec depth. *)
-(* admit. *)
-(* Qed. *)
+Lemma test_bothsides (f := fun x : R => Rtrigo_def.exp x) : (0 <= RInt f 0 1 <= 23/8)%R.
+Proof.
+pose g (x : I.type) := FInt.exp prec10 x.
+pose prec : F.precision := prec10.
+pose depth : nat := 1%nat.
+rewrite /f.
+integral_tac prec depth.
+admit.
+Qed.
+
+
+Lemma test_left (f := fun x : R => Rtrigo_def.exp x) : (0 <= RInt f 0 1)%R.
+Proof.
+pose g (x : I.type) := FInt.exp prec10 x.
+pose prec : F.precision := prec10.
+pose depth : nat := 1%nat.
+rewrite /f.
+integral_tac prec depth.
+admit.
+Qed.
+
+
+Lemma test_right (f := fun x : R => Rtrigo_def.exp x) : (RInt f 0 1 <= 23 / 8)%R.
+Proof.
+pose g (x : I.type) := FInt.exp prec10 x.
+pose prec : F.precision := prec10.
+pose depth : nat := 1%nat.
+rewrite /f.
+integral_tac prec depth.
+admit.
+Qed.
+
+Lemma test_right_ge (f := fun x : R => Rtrigo_def.exp x) : (RInt f 0 1 >= 0)%R.
+Proof.
+pose g (x : I.type) := FInt.exp prec10 x.
+pose prec : F.precision := prec10.
+pose depth : nat := 1%nat.
+rewrite /f.
+integral_tac prec depth.
+admit.
+Qed.
 
 
  
