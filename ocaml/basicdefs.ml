@@ -12,6 +12,10 @@ let makeIntervalle (f1 : float) (f2 : float) = ((f1,f2) : intervalle);;
 let print_interval (a,b) =
   print_string "(" ; print_float a; print_string ","; print_float b; print_string ")";;
 
+let print_interval_bis (a,b) =
+  Printf.printf "(%.8f,%.8f)" a b;;
+
+
 let minf = neg_infinity
 let pinf = infinity
 
@@ -94,9 +98,9 @@ let epsilon = epsilon_float
 let eta = min_float
 
 (* Round down *)
-let rd x = x;; (* if x < 0. then (x *. (1. +. epsilon) -. eta) else (x *. (1. -. epsilon) -. eta);; *)
+let rd x = if x < 0. then (x *. (1. +. epsilon) -. eta) else (x *. (1. -. epsilon) -. eta);;
 (* Round up *)
-let ru x = x;; (* if x <= 0. then (x *. (1. -. epsilon) +. eta) else (x *. (1. +. epsilon) +. eta);; *)
+let ru x = if x <= 0. then (x *. (1. -. epsilon) +. eta) else (x *. (1. +. epsilon) +. eta);;
 
 (* basic operations on intervals *)
 

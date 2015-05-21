@@ -21,7 +21,10 @@ exception Continue;;
 
 let t = Array.make 9 0;;
 
-let reject i = t.(i-1) <- t.(i-1) + 1; raise Reject;;
+let reject c1 h0 i = 
+  Printf.printf "reject at step %d\n" i;
+  t.(i-1) <- t.(i-1) + 1; raise Reject;;
+
 let noresult () = raise NoResult;;
 
 let print_step i = () ;;(* match i with *)
@@ -166,14 +169,26 @@ let dvmax (* z *) h f ymax =
     List.fold_right (fun (x,y) z -> subs (Var x) (Const y) z) ["H",h;"F",f;"Y_max",ymax] dvmax_sym in
   sym2iFunGen (fun x -> x) pre_dvmax;;
 
+let integralIntBounds dx idepth t y2 =
+  let r = integralIntBounds dx idepth t y2 in
+  print_interval_bis t; print_string " ";
+  print_interval_bis y2; print_string " -> ";
+  print_interval_bis r; pn ();
+  r
 
 let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth = 
+  print_interval_bis c1; pn ();
+  print_interval_bis h0; pn ();
   (* step 1 *)
 
   print_step 1;
   if (iGeq (iMult i1000 c1) i996) && (iLeq (iMult five h0) (one)) then
-    reject 1;
-  
+    begin
+      (* psn "reject at step 1"; *)
+      (* print_interval_bis c1; pn (); *)
+      (* print_interval_bis h0; pn(); *)
+      reject c1 h0 1;
+    end;
   (* step 2 *)
   
   print_step 2;
@@ -200,7 +215,16 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
       (iSub one (iSqr c1))
   in 
   (* print_interval (iPlus (iPow c2 2) t); pn(); *)
-  if iNeq (iPlus (iPow c2 2) t) one then reject 2;
+  (* psn "value of t:"; *)
+  (* print_interval_bis t; pn (); *)
+  (* psn "at step 2 on c1,h0 : "; *)
+  (* print_interval_bis c1; pn (); *)
+  (* print_interval_bis h0; pn(); *)
+  if iNeq (iPlus (iPow c2 2) t) one then
+    begin
+      (* psn "rejected"; *)
+      reject c1 h0 2;
+    end;
 
 (* step 3 *)
 
@@ -210,7 +234,7 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
     (iDiv
        (iSub (iMult (iSub hi one) (y2)) (iDiv fi y2))
        (iSqrt three)) in
-  if is_empty c2 then reject 3;
+  if is_empty c2 then reject c1 h0 3;
 
 (* step 4 *)
 
@@ -220,7 +244,7 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
        one
        (iMult (iSqrt three) (iDiv c1 y1))
     )
-  then reject 4;
+  then reject c1 h0 4;
 
 (* step 5 *)
 
@@ -257,19 +281,19 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
 	  (iPlus y (iDiv (iSqrt (three)) (two)))
 	  (iSqr r)
        ) in
-     if iLt w w_ends then reject 6);
+     if iLt w w_ends then reject c1 h0 6);
 
 (* step 7 *)
 
   print_step 7;
   let yleft = iSqrt (iDiv f0 h0) in
   let yleft = if (iLt ymin y2) && (iLt yleft ymax) then iMax y1 yleft else noresult() in
-  let y4 = thin (avgwt yleft ymax 0.5) in
+  let y4 = thin (avgwt yleft ymax (1. /. 16.)) in
   let z2 = iSqrt(iSub ymax y2) in
   let z4 = iNeg (iSqrt(iSub ymax y4)) in
   if iGeq (iMult i1000 c1) (i998) then
     begin
-      let t = (avgwt y1 y2 (1. /. 16.)) in
+      let t = (avgwt y1 y2 (1. /. 2.)) in
       let delta_i = 
 	iPlus
 	  (iMult 
@@ -282,13 +306,13 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
 	iPlus 
 	  delta_0
 	  (integralIntBounds (dx h0 f0) idepth (thin t) y4) in
-      if iGt delta_0 delta_i then reject 7;
+      if iGt delta_0 delta_i then reject c1 h0 7;
       let delta_0 = 
 	iPlus
 	  delta_0
 	  (integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2)
       in
-      if iGt delta_0 delta_i then reject 7;
+      if iGt delta_0 delta_i then reject c1 h0 7;
       if contient c1 1. then noresult();
     end;
 
@@ -302,13 +326,13 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
   let z1 = compare c1 (iDiv (iSqrt(three)) (two)) (iNeg t) t in
   let z3 = iSqrt(iSub y2 ymin) in
   let delta_i = integralIntBounds (dxmin hi fi ymin) idepth z1 z3 in
-  let delta_0 = integralIntBounds (dx h0 f0) idepth y1 y4 in
-  if iLt delta_i delta_0 then reject 8;
+  let delta_0 = integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2 in
+  if iLt delta_i delta_0 then reject c1 h0 8;
   let delta_0 = 
     iPlus 
       delta_0 
-      (integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2) in
-  if iNeq delta_i delta_0 then reject 8;
+      (integralIntBounds (dx h0 f0) idepth y1 y4) in
+  if iNeq delta_i delta_0 then reject c1 h0 8;
 
 (* step 9 *)
 
@@ -325,16 +349,16 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
   (* print_interval i2; pn(); *)
   let w_0 = 
     iPlus
-      (integralIntBounds (dv h0 f0) idepth y1 y4)
+      (i1)
       (iSub
-	 (integralIntBounds (dvmax h0 f0 ymax) idepth z4 z2)
+	 (i2)
 	 w_base
       ) in
   (* psn "w_i : "; *)
   (* print_interval w_i; pn(); *)
   (* psn "w_0 : "; *)
   (* print_interval w_0; pn(); *)
-  if iNeq w_i w_0 then reject 9 else noresult();;
+  if iNeq w_i w_0 then reject c1 h0 9 else noresult();;
 
 
 let rec divideAndCheckRectangle y1 h0 idepth fuel =

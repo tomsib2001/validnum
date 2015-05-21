@@ -122,7 +122,7 @@ WITHDBM =dbm.cma -cclib -lmldbm -cclib -lndbm
 ################ Nothing to set up or fix here
 ##############################################################
 
-all:: .depend.input .depend $(EXEC)
+all:: .depend.input .depend $(EXEC).opt doubbub
 
 opt : .depend.input .depend $(EXEC).opt
 
@@ -204,3 +204,6 @@ depend: .depend
 	$(CAMLDEP) $(SMLIY) $(SMLIY:.ml=.mli) > .depend
 
 include .depend
+
+doubbub: doubbub.cpp
+	g++ -Wall -frounding-math -O3 -m32 -mfpmath=387 -mno-sse -mno-sse2 doubbub.cpp -o doubbub
