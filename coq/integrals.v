@@ -256,22 +256,162 @@ exact: 0.
 Qed.
 
 
-Ltac get_bounds l :=
-  let rec aux l :=
+Ltac get_trivial_bounds l prec :=
+  let rec aux l prec :=
     match l with
-    | Datatypes.nil => constr:(@Datatypes.nil IntA.bound_proof)
-    | Datatypes.cons ?x ?l =>
+    | nil => constr:(@nil IntA.bound_proof)
+    | cons ?x ?l =>
       let i :=
-        match goal with
-        | _ =>
-          let v := Private.get_float x in
-          constr:(let f := v in IntA.Bproof x (I.bnd f f) (conj (Rle_refl x) (Rle_refl x)))
-        | _ => fail 100 "Atom" x "is neither a floating-point value nor bounded by floating-point values."
-        end in
-      let m := aux l in
-      constr:(Datatypes.cons i m)
+      match x with
+      | PI => constr:(IntA.Bproof x (FInt.pi prec) (FInt.pi_correct prec))
+      | Private.toR ?v =>
+        constr:(let f := v in IntA.Bproof x (I.bnd f f) (conj (Rle_refl x) (Rle_refl x)))
+      end in
+      match aux l prec with
+      | ?m => constr:(cons i m)
+      end
     end in
-  aux l.
+  aux l prec.
+
+Ltac generate_machine l :=
+  let rec aux l q :=
+    match l with
+    | nil => q
+    | cons ?t ?l =>
+      let m :=
+        match t with
+        | Eunary ?o ?a =>
+          let u := list_find2 a l in
+          constr:(Unary o u)
+        | Ebinary ?o ?a ?b =>
+          let u := list_find2 a l in
+          let v := list_find2 b l in
+          constr:(Binary o u v)
+        end in
+      aux l (cons m q)
+    end in
+  aux l (@nil term).
+
+Ltac extract_algorithm t l :=
+  match reify t l with
+  | (?t, ?lc) =>
+    let lm := generate_machine ltac:(get_non_constants t) in
+    constr:(lm, lc)
+  end.
+
+
+Ltac get_bounds_aux x prec :=
+  match goal with
+  | H: Rle ?a x /\ Rle x ?b |- _ =>
+    let v := get_float a in
+    let w := get_float b in
+    constr:(IntA.Bproof x (I.bnd v w) H)
+  | H: Rle ?a x /\ Rle x ?b |- _ =>
+    let va := extract_algorithm a (@nil R) in
+    let vb := extract_algorithm b (@nil R) in
+    match va with
+    | (?pa, ?la) =>
+      let lca := get_trivial_bounds la prec in
+      match vb with
+      | (?pb, ?lb) =>
+        let lcb := get_trivial_bounds lb prec in
+        constr:(let proga := pa in let boundsa := lca in let progb := pb in let boundsb := lcb in
+          IntA.Bproof x _ (contains_bound_lr x prec proga boundsa 0 progb boundsb 0 H))
+      end
+    end
+  | H: Rle ?a x |- _ =>
+    let v := get_float a in
+    constr:(IntA.Bproof x (I.bnd v F.nan) (conj H I))
+  | H: Rle ?a x |- _ =>
+    let v := extract_algorithm a (@nil R) in
+    match v with
+    | (?p, ?l) =>
+      let lc := get_trivial_bounds l prec in
+      constr:(let prog := p in let bounds := lc in IntA.Bproof x _ (contains_bound_l x prec prog bounds 0 H))
+    end
+  | H: Rle x ?b |- _ =>
+    let v := get_float b in
+    constr:(IntA.Bproof x (I.bnd F.nan v) (conj I H))
+  | H: Rle x ?b |- _ =>
+    let v := extract_algorithm b (@nil R) in
+    match v with
+    | (?p, ?l) =>
+      let lc := get_trivial_bounds l prec in
+      constr:(let prog := p in let bounds := lc in IntA.Bproof x _ (contains_bound_r x prec prog bounds 0 H))
+    end
+  | H: Rle (Rabs x) ?b |- _ =>
+    let v := get_float b in
+    constr:(IntA.Bproof x (I.bnd (F.neg v) v) (Rabs_contains_rev v x H))
+  | H: Rle (Rabs x) ?b |- _ =>
+    let v := extract_algorithm b (@nil R) in
+    match v with
+    | (?p, ?l) =>
+      let lc := get_trivial_bounds l prec in
+      constr:(let prog := p in let bounds := lc in IntA.Bproof x _ (contains_bound_ar x prec prog bounds 0 H))
+    end
+  end.
+
+
+Ltac get_bounds l prec :=
+  let rec aux l prec lw :=
+    match l with
+    | nil => constr:(@nil IntA.bound_proof, @nil R)
+    | cons ?x ?l =>
+      let i :=
+      match x with
+      | PI => constr:(IntIntA.Bproof x (FInt.pi prec) (FInt.pi_correct prec), @None R)
+      | Private.toR ?v =>
+        constr:(let f := v in IntIntA.Bproof x (I.bnd f f) (conj (Rle_refl x) (Rle_refl x)), @None R)
+      | _ =>
+        match goal with
+        (* | _ => *)
+        (*   let v := Interval_tactic.Private.get_bounds_aux x prec in *)
+        (*   constr:(v, @None R) *)
+        | _ =>
+          match goal with
+          | H: Rle ?a x /\ Rle x ?b |- _ => idtac
+          | H: Rle ?a x |- _ => idtac
+          | H: Rle x ?b |- _ => idtac
+          | H: Rle (Rabs x) ?b |- _ => idtac
+          end ;
+          fail 100 "Atom" x "is neither a floating-point value nor bounded by floating-point values."
+        | _ =>
+          constr:(IntIntA.Bproof x (I.bnd F.nan F.nan) (conj I I), @Some R x)
+        end
+      end in
+      match aux l prec lw with
+      | (?m, ?lw) =>
+        match i with
+        | (?i, @None R) => constr:(cons i m, lw)
+        | (?i, @Some R ?aw) => constr:(cons i m, cons aw lw)
+        end
+      end
+    end in
+  aux l prec (@nil R).
+
+
+(* Ltac get_bounds l := *)
+(*   let rec aux l := *)
+(*     match l with *)
+(*     | Datatypes.nil => constr:(@Datatypes.nil IntA.bound_proof) *)
+(*     | Datatypes.cons ?x ?l => *)
+(*       let i := *)
+(*         match goal with *)
+(*         | _ => *)
+(*           let v := Private.get_float x in *)
+(*           constr:(let f := v in IntIntA.Bproof x (I.bnd f f) (conj (Rle_refl x) (Rle_refl x))) *)
+(*         | _ =>  *)
+(*           match goal with *)
+(*             | H: Rle ?a x /\ Rle x ?b |- _ => idtac *)
+(*             | H: Rle ?a x |- _ => idtac *)
+(*             | H: Rle x ?b |- _ => idtac *)
+(*             | H: Rle (Rabs x) ?b |- _ => idtac *)
+(*           end ; fail 100 "Atom" x "is neither a floating-point value nor bounded by floating-point values." *)
+(*         end in *)
+(*       let m := aux l in *)
+(*       constr:(Datatypes.cons i m) *)
+(*     end in *)
+(*   aux l. *)
 
 
 Ltac integral_tac_test g prec depth :=
@@ -349,68 +489,27 @@ Ltac integral_tac prec depth :=
 Require Import BigZ.
 Definition prec10 := (10%bigZ) : F.precision.
 
-
-(* Lemma test_reification  : (0 <= RInt (fun x => x + 2) 0 1 <= 1000/8)%R. *)
-(* Proof. *)
-(* integral_tac prec10 (0%nat). *)
-
-(* [idtac | abstract (vm_cast_no_check (eq_refl true)) | abstract (vm_cast_no_check (eq_refl true)) ]. *)
-(* match goal with *)
-(*     | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c =>  *)
-(*       let v := Private.get_float a in *)
-(*       let w := Private.get_float c in *)
-(*       let lb := Private.get_float ra in *)
-(*       let ub := Private.get_float rb in *)
-(* apply (integral_correct_ter prec10 0 lb ub (I.bnd v w) formula bounds) end  . *)
-
-(* match goal with  *)
-(* | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => *)
-(*   let f' := (eval cbv beta in (f reify_var)) *)
-(*   in match Private.extract_algorithm f' (reify_var::List.nil) with *)
-(*        | (?formul,_::?const) =>  *)
-(*          let formula := fresh "formula" in *)
-(*          pose (formula := formul); *)
-(*            let v := Private.get_float a in *)
-(*            let w := Private.get_float c in *)
-(*            let lb := Private.get_float ra in *)
-(*            let ub := Private.get_float rb in *)
-(*            (* change (contains (I.convert (I.bnd v w)) (Xreal (RInt (fun x => nth 0 (eval_real formula (x::consts)) R0) (T.toR lb) (T.toR ub)))); *) *)
-(*            let bounds := fresh "bounds" in *)
-(*            let toto1 := get_bounds const in  *)
-(*            pose bounds := toto1; *)
-(*                          apply (integral_correct_ter prec10 0 lb ub (I.bnd v w) formula bounds) *)
-(*      end  *)
-(* end. *)
-(* simpl. *)
-(* admit. *)
-(* Qed. *)
-
-(* have toto := (notNaiInt prec10 formula bounds F.zero (Float 1%bigZ 0%bigZ)). *)
-(* have toto1 :  (forall n : nat, *)
-(*           nth n *)
-(*             (IntA.BndValuator.eval prec10 formula *)
-(*                (I.bnd F.zero (Float 1%bigZ 0%bigZ) *)
-(*                 :: map IntA.interval_from_bp bounds)) I.nai <> I.nai). *)
-(* intros n. *)
-(* simpl. *)
-(* do 4 (case: n => [|n]//) => //. (* it's false.. x*) *)
-(* About notNaiInt. *)
-(* Admitted. *)
-
 Notation exp := Rtrigo_def.exp.
 Notation cos := Rtrigo_def.cos.
 
 Definition prec30 := (30%bigZ) : F.precision.
 
-(* apply (integral_correct_ter prec10 0 (F.zero)  (Float 1%bigZ 0%bigZ) (I.bnd F.zero (Float 7%bigZ (-3)%bigZ)) formula bounds). *)
+(* Goal forall x, 0 <= x <= 1 -> (x + 1) * cos x <= 2. *)
+(* move => x Hx. *)
+(* interval_intro x.  *)
+(* interval. *)
 
-(* Lemma test  : *)
-(* (0<= RInt (fun x => (x + 1 )*(cos x)) 0 1<=2). *)
-(* Proof. *)
-(* integral_tac prec30 (11%nat). *)
-(* admit. *)
-(* Qed. *)
+Lemma test  :
+(0<= RInt (fun x => (x )*(cos (x + 1))) 0 1<=2).
+Proof.
+integral_tac prec30 (11%nat).
+admit.
+Qed.
 
+Ltac toto := (let w := Private.get_float 1%R in (fail "coucou" w)).
+
+Goal True.
+toto.
 
 (* For tests and benchmarks *)
 (* Print 3. *)
