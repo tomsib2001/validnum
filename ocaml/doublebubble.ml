@@ -67,7 +67,7 @@ let dx (* y *) h f =
 
 let (dxmin_sym : intervalle elemFun) = 
   let y = Plus(Var "Y_min",Pow(Var "Z",2)) in
-  let t = Sub(Mult(Var "H",Pow(Var "Y",2)),Var "F") in
+  let t = Sub(Mult(Var "H",Pow(y,2)),Var "F") in
   Div(Mult(Const two,t),Sqrt(
     Mult
       (Plus(Mult(Const two,y),t),
@@ -328,6 +328,12 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
   let delta_i = integralIntBounds (dxmin hi fi ymin) idepth z1 z3 in
   let delta_0 = integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2 in
   if iLt delta_i delta_0 then reject c1 h0 8;
+  psn "h0 is";
+  print_interval_bis h0; pn();
+  psn "f0 is";
+  print_interval_bis f0; pn();
+  psn "t is";
+  print_interval_bis t; pn();
   let delta_0 = 
     iPlus 
       delta_0 

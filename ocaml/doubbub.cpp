@@ -732,6 +732,12 @@ int CheckRectangle(rp C_1, rp H_o)
 	setGlobal(H_o,F_o);
 	Delta_o = Integrate(Dxmax,Z_4,Z_2);
 	if (Delta_i < Delta_o) return REJECT(8);
+	printf("h0 is\n");
+	printf("(%.8f,%.8f)\n", H_o.l + 0., H_o.r);
+	printf("f0 is\n");
+	printf("(%.8f,%.8f)\n", F_o.l + 0., F_o.r);
+	printf("t is\n");
+	printf("(%.8f,%.8f)\n", T.l + 0., T.r);
 	Delta_o += Integrate(Dx,Y_1,Y_4);
 	if (Delta_i != Delta_o) return REJECT(8);
 
