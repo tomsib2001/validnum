@@ -532,7 +532,7 @@ rp Integrate(rp::func F, rp A, rp B)
 		R += (*F)(A.r + i*H + (0 | H));
 	}
 	rp r = (0|(*F)(A))*A.width() + (0|(*F)(B))*B.width() + R * H;
-	printf("(%.8f,%.8f) (%.8f,%.8f) -> (%.8f,%.8f)\n", A.l + 0., A.r, B.l + 0., B.r, r.l + 0., r.r);
+	printf("(%.7f,%.7f) (%.7f,%.7f) -> (%.7f,%.7f)\n", A.l + 0., A.r, B.l + 0., B.r, r.l + 0., r.r);
   return r;
 }
 
@@ -629,15 +629,15 @@ static int reject(rp c1, rp h0, int n)
 int CheckRectangle(rp C_1, rp H_o)
 // return a positive exclusion code if successful
 {
-  printf("(%.8f,%.8f)\n", C_1.l + 0., C_1.r);
-  printf("(%.8f,%.8f)\n", H_o.l + 0., H_o.r);
+  printf("(%.7f,%.7f)\n", C_1.l + 0., C_1.r);
+  printf("(%.7f,%.7f)\n", H_o.l + 0., H_o.r);
 // step 1
 	// check based on Proposition 4.21.
   if (1000*C_1 >= 996 && 5*H_o <= 1) {
     /*
     printf("reject at step 1\n");
-	printf("(%.8f,%.8f)\n", C_1.l + 0., C_1.r);
-	printf("(%.8f,%.8f)\n", H_o.l + 0., H_o.r);
+	printf("(%.7f,%.7f)\n", C_1.l + 0., C_1.r);
+	printf("(%.7f,%.7f)\n", H_o.l + 0., H_o.r);
     */
 	return REJECT(1);
   }
@@ -653,10 +653,10 @@ int CheckRectangle(rp C_1, rp H_o)
 	rp T = (2*Ht*F_i + 3) / (3 + (Ht^2)) - (1 - (C_1^2));
 	/*
 	printf("value of t:\n");
-	printf("(%.8f,%.8f)\n", T.l + 0., T.r);
+	printf("(%.7f,%.7f)\n", T.l + 0., T.r);
 	printf("at step 2 on c1,h0 : \n");
-	printf("(%.8f,%.8f)\n", C_1.l + 0., C_1.r);
-	printf("(%.8f,%.8f)\n", H_o.l + 0., H_o.r);
+	printf("(%.7f,%.7f)\n", C_1.l + 0., C_1.r);
+	printf("(%.7f,%.7f)\n", H_o.l + 0., H_o.r);
 	*/
 	if ((C_2^2) + T != 1) {
 	  //printf("rejected\n");
@@ -684,6 +684,8 @@ int CheckRectangle(rp C_1, rp H_o)
 	Global.Y_min = - F_i / (1 + Sqrt(1 + F_i*H_i));	// local y min
 	Global.Y_max = (1 + Sqrt(1 + F_o*H_o)) / H_o;		// local y max
 	rp W_ends = ((1-C_1)^2)*(2+C_1)/3 + ((1-C_2)^2)*(2+C_2)/3;
+	printf("w_ends is\n");
+	printf("(%.7f,%.7f)\n", W_ends.l + 0., W_ends.r);
 	rp Y = Compare(C_1,Root3/2,Global.Y_min,Y_1);
 	if (Y * H_i < -1 && Y > 0)
 	{
@@ -733,11 +735,13 @@ int CheckRectangle(rp C_1, rp H_o)
 	Delta_o = Integrate(Dxmax,Z_4,Z_2);
 	if (Delta_i < Delta_o) return REJECT(8);
 	printf("h0 is\n");
-	printf("(%.8f,%.8f)\n", H_o.l + 0., H_o.r);
+	printf("(%.7f,%.7f)\n", H_o.l + 0., H_o.r);
 	printf("f0 is\n");
-	printf("(%.8f,%.8f)\n", F_o.l + 0., F_o.r);
+	printf("(%.7f,%.7f)\n", F_o.l + 0., F_o.r);
 	printf("t is\n");
-	printf("(%.8f,%.8f)\n", T.l + 0., T.r);
+	printf("(%.7f,%.7f)\n", T.l + 0., T.r);
+	printf("delta_0 is\n");
+	printf("(%.7f,%.7f)\n", Delta_o.l + 0., Delta_o.r);
 	Delta_o += Integrate(Dx,Y_1,Y_4);
 	if (Delta_i != Delta_o) return REJECT(8);
 
@@ -753,6 +757,10 @@ int CheckRectangle(rp C_1, rp H_o)
 	setGlobal(H_o,F_o);
 	rp foo = Integrate(Dv,Y_1,Y_4);
 	rp W_o = foo + Integrate(Dvmax,Z_4,Z_2) - W_base;
+	printf("w_i is\n");
+	printf("(%.7f,%.7f)\n", W_i.l + 0., W_i.r);
+	printf("w_0 is\n");
+	printf("(%.7f,%.7f)\n", W_o.l + 0., W_o.r);
 	if (W_i != W_o) return REJECT(9);
 	return NORESULT;
 }
