@@ -266,19 +266,22 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
       (iMult 
 	 (iPow (iSub one c2) 2)
 	 (iDiv
-	    (iPlus two c1)
+	    (iPlus two c2)
 	    (three)
 	 )
       ) in
+  psn "w_ends is";
+  print_interval_bis w_ends; pn();
   let ymin = iDiv (iNeg fi) (iPlus one (iSqrt (iPlus one (iMult fi hi)))) in 
   let ymax = iDiv (iPlus one (iSqrt (iPlus one (iMult f0 h0)))) (h0) in
   let y = compare c1 (iDiv (iSqrt three) two) ymin y1 in
   if iLt (iMult y hi) (iNeg one) then
-    (let r = iDiv one (iSub (iNeg hi) (iDiv one y)) in
+    (* (let r = iDiv one (iSub (iNeg hi) (iDiv one y)) in *)
+    (let r = iDiv (iDiv (iSqrt (three)) (two)) (iSub (iNeg hi) (iDiv one y)) in
      let w = iMult 
        (thin 2.5) 
        (iMult 
-	  (iPlus y (iDiv (iSqrt (three)) (two)))
+	  (iPlus y (iMult r (iDiv (iSqrt (three)) (two))))
 	  (iSqr r)
        ) in
      if iLt w w_ends then reject c1 h0 6);
@@ -334,6 +337,8 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
   print_interval_bis f0; pn();
   psn "t is";
   print_interval_bis t; pn();
+  psn "delta_0 is";
+  print_interval_bis delta_0; pn();
   let delta_0 = 
     iPlus 
       delta_0 
@@ -360,10 +365,10 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
 	 (i2)
 	 w_base
       ) in
-  (* psn "w_i : "; *)
-  (* print_interval w_i; pn(); *)
-  (* psn "w_0 : "; *)
-  (* print_interval w_0; pn(); *)
+  psn "w_i is";
+  print_interval_bis w_i; pn();
+  psn "w_0 is";
+  print_interval_bis w_0; pn();
   if iNeq w_i w_0 then reject c1 h0 9 else noresult();;
 
 
