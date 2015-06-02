@@ -34,6 +34,23 @@ let rec elemFun_to_string soc = function
   | VarFun(f,k,x) -> f^"^"^(string_of_int k)^"("^(elemFun_to_string soc x)^")"
   (* | _ -> "not implemented in elemFun_to_string";; (\* for future additions*\) *)
 
+let rec elemFun_to_coq soc = function
+  | Const f -> soc f
+  | Var x -> x
+  | Plus (x,y) -> ("iPlus"^(" (")^(elemFun_to_coq soc x)^") ("^(elemFun_to_coq soc y)^")")
+  | Mult (x,y) -> ("iMult"^(" (")^(elemFun_to_coq soc x)^") ("^(elemFun_to_coq soc y)^")")
+  | Sub (x,y) ->  ("iSub"^(" (")^(elemFun_to_coq soc x)^") ("^(elemFun_to_coq soc y)^")")
+  | Div (x,y) -> ("iDiv"^(" (")^(elemFun_to_coq soc x)^") ("^(elemFun_to_coq soc y)^")")
+  | Pow(x,n) -> ("iPow"^(" (")^(elemFun_to_coq soc x)^") ("^(string_of_int n)^")")
+  | Neg x -> "( iNeg ("^(elemFun_to_coq soc x)^"))"
+  | Sqrt x -> "( iSqrt ("^(elemFun_to_coq soc x)^"))"
+  | Sin x -> " iSin ("^(elemFun_to_coq soc x)^")"
+  | Cos x -> " iCos ("^(elemFun_to_coq soc x)^")"
+  | Exp x -> " iExp ("^(elemFun_to_coq soc x)^")"
+  | Log x -> " iLog ("^(elemFun_to_coq soc x)^")"
+  | VarFun(f,k,x) -> f^"^"^(string_of_int k)^"("^(elemFun_to_coq soc x)^")"
+
+
 (* a generic function which interprets a symbolic elementary function into a desired model: it could be float -> float functions, interval -> interval functions, symbolic functions again (this would be desirable for derivation or taylor models) *)
 let makeF const var plus mult neg sub div sqrt cos sin exp log pow varfun f = 
   let rec aux = function

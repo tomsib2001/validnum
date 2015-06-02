@@ -58,7 +58,7 @@ let (dx_sym : intervalle elemFun) =
   Div(t,Sqrt(Mult(Plus(Mult(Const two,Var "Y"),t),Sub((Mult(Const two,Var "Y"),t)))));;
 
 psn "dx : ";;
-psn (elemFun_to_string interval_to_string dx_sym);;
+psn (elemFun_to_coq interval_to_string dx_sym);;
 
 let dx (* y *) h f =
   let pre_dx = 
@@ -74,7 +74,7 @@ let (dxmin_sym : intervalle elemFun) =
        Sub(Sub(Const two,Mult(Var "H",Var "Y_min")),Mult(y,Var "H")))));;
 
 psn "dxmin : ";;
-psn (elemFun_to_string interval_to_string dxmin_sym);;
+psn (elemFun_to_coq interval_to_string dxmin_sym);;
 
 let dxmin (* z *) h f ymin =   
   let pre_dxmin = 
@@ -108,7 +108,7 @@ let (dxmax_sym : intervalle elemFun) =
   );;
 
 psn "dxmax : ";;
-psn (elemFun_to_string interval_to_string dxmax_sym);;
+psn (elemFun_to_coq interval_to_string dxmax_sym);;
 
 let dxmax (* z *) h f ymax =   
   let pre_dxmax = 
@@ -118,7 +118,7 @@ let dxmax (* z *) h f ymax =
 let dv_sym = Mult(Pow(Var "Y",2),dx_sym);;
 
 psn "dv : ";;
-psn (elemFun_to_string interval_to_string dv_sym);;
+psn (elemFun_to_coq interval_to_string dv_sym);;
 
 let dv (* y *) h f = 
   let pre_dv = 
@@ -140,7 +140,7 @@ let dvmin_sym =
   );;
 
 psn "dvmin : ";;
-psn (elemFun_to_string interval_to_string dvmin_sym);;
+psn (elemFun_to_coq interval_to_string dvmin_sym);;
 
 let dvmin (* z *) h f ymin = 
   let pre_dvmin = 
@@ -162,7 +162,7 @@ let dvmax_sym =
   );;
 
 psn "dvmax : ";;
-psn (elemFun_to_string interval_to_string dvmax_sym);;
+psn (elemFun_to_coq interval_to_string dvmax_sym);;
 
 let dvmax (* z *) h f ymax = 
   let pre_dvmax = 

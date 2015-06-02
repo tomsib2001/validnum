@@ -70,6 +70,7 @@ let foi = float_of_int
 let sof = string_of_float
 
 let interval_to_string (x,y) = "("^(sof x)^","^(sof y)^")";;
+let interval_to_coq (x,y) = "("^(sof x)^","^(sof y)^")";;
 
 let contientZero (a,b) =
   ((a <= 0.) && (0. <= b)) || ((b < a) && (0. <= b || 0.>= a));;
