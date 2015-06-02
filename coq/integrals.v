@@ -105,9 +105,8 @@ Fixpoint integral (depth : nat) (a b : F.type) :=
     | S n => let m := I.midpoint int in
              let i1 := integral n a m in
              let i2 := integral n m b in
-             I.add prec i1 i2 
-  end
-.
+             I.add prec i1 i2
+  end.
 
 (* Definition round_down := round radix2 rnd_DN (F.prec prec). *)
 (* Definition round_up := round radix2 rnd_UP (F.prec prec). *)
@@ -171,6 +170,31 @@ rewrite Fcmp_correct.
 case: ( (F.toF a)) => //;
 case: ( (F.toF b)) => //.
 Qed.
+
+(* let int := I.bnd a b in *)
+(*   match depth with *)
+(*     | O => I.mul prec (iF (int)) (I.sub prec (thin b) (thin a)) *)
+(*     | S n => let m := I.midpoint int in *)
+(*              let i1 := integral n a m in *)
+(*              let i2 := integral n m b in *)
+(*              I.add prec i1 i2 *)
+(*   end. *)
+
+Definition diam rd x :=
+  match x with
+    | Inan => F.nan
+    | Ibnd a b => F.sub rd prec b a
+  end.
+
+
+Definition integral_intBounds depth (a b : I.type) rd :=
+  match a,b with
+    | Inan, _ => Inan
+    | _, Inan => Inan
+    | Ibnd _ b1, Ibnd a2 _ =>
+      let sab := I.mul prec (thin (diam rd a)) (FInt.join (thin F.zero) (iF a)) in
+      let scd := I.mul prec (thin (diam rd b)) (FInt.join (thin F.zero) (iF b)) in
+      I.add prec (I.add prec sab scd) (integral depth b1 a2) end.
 
 End integral.
 
