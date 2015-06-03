@@ -26,6 +26,8 @@ Hypothesis ltab : ra < rb.
 
 Hypothesis fint : ex_RInt f ra rb.
 
+Require Import Fourier.
+
 Lemma RInt_le_r (u : R) : 
  (forall x : R, ra <= x <= rb -> f x <= u) -> RInt f ra rb / (rb - ra) <= u.
 Proof.
@@ -34,6 +36,7 @@ have -> : u * (rb - ra) = RInt (fun _ => u) ra rb.
   by rewrite RInt_const Rmult_comm.
 apply: RInt_le => //; first exact: Rlt_le.
 exact: ex_RInt_const.
+by move => x Hx; apply: hfu; split; apply: Rlt_le;  case: Hx.
 Qed.
 
 Lemma RInt_le_l (l : R) : 
@@ -44,6 +47,7 @@ have -> : l * (rb - ra) = RInt (fun _ => l) ra rb.
   by rewrite RInt_const Rmult_comm.
 apply: RInt_le => //; first exact: Rlt_le.
 exact: ex_RInt_const.
+by move => x Hx; apply: hfl; split; apply: Rlt_le;  case: Hx.
 Qed.
 
 End IntegralEstimation.
