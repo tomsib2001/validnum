@@ -51,7 +51,7 @@ Notation float := F.type.
 Definition iLt (i1 i2 : intervalle) := 
   if i1 is Ibnd l1 r1
   then if i2 is Ibnd l2 r2
-       then (Flt r1 l2) && (Flt l1 r2)
+       then (Flt r1 l2) (* && (Flt l1 r2) *)
        else false
   else false.
 
@@ -62,7 +62,7 @@ Definition iGt (i1 i2 : intervalle) :=
 Definition iLeq (i1 i2 : intervalle) := 
   if i1 is Ibnd l1 r1
   then if i2 is Ibnd l2 r2
-       then (Fle r1 l2) && (Fle l1 r2)
+       then (Fle r1 l2) (* && (Fle l1 r2) *)
        else false
   else false.
 
@@ -76,17 +76,17 @@ Definition iMax x y :=
     | Ibnd a b, Ibnd c d => Ibnd (Fmax a c) (Fmax b d)
 end.
 
-
-Definition foo (n m : nat) :=
-  match (n, m) with
-  | pair (S O) l => l
-  | _ => O
-end.
-
 Definition compare (x y a b : intervalle) := 
   if iLt x y then a else 
     if iGt x y then b else
       FInt.I.join a b.
+
+Definition is_empty x : bool := 
+  match x with
+    | Inan => false
+    | Ibnd a b => Flt b a
+  end.
+
 
 Section Doubbub.
 
@@ -103,7 +103,8 @@ Definition iSqrt := FInt.sqrt prec.
 Definition iSqr := fun i => FInt.power_int prec i 2. 
 Definition iPow x n := FInt.power_int prec x n.
 Definition iNeg := FInt.neg.
-Definition iNeq x y := (iLt x y) || (iLt y x).
+(* Definition iNeq x y := (iLt x y) || (iLt y x). *)
+Definition iNeq x y := is_empty (FInt.meet x y).
 
 (* constants *)
 Definition i1000 := thin (F.fromZ  1000).
@@ -161,14 +162,6 @@ iMult (iPow (iSub (Y_max) (iPow (Z) (2))) (2)) (iDiv (iMult (two_int) (iSub (iMu
 
 (* end functions which are integrated *)
 
-
-Definition is_empty x : bool := 
-  match x with
-    | Inan => false
-    | Ibnd a b => Flt b a
-  end.
-
-
 (* pasted comment from C++ code: *)
 (* returns a point between x and y.  Rounding is not material here. *)
 Definition avgwt (x y : intervalle) (w : F.type) : F.type :=
@@ -199,7 +192,7 @@ end.
 
 Inductive result :=
 | Reject : nat -> result
-| NoResult.
+| NoResult : nat -> result.
 
 
 Definition step9 z1 z2 z3 z4 hi fi ymin ymax w_ends y1 y4 f0 h0 idepth :=
@@ -214,7 +207,7 @@ Definition step9 z1 z2 z3 z4 hi fi ymin ymax w_ends y1 y4 f0 h0 idepth :=
 	 (i2)
 	 w_base
       ) in
-  if iNeq w_i w_0 then Reject 9 else NoResult.
+  if iNeq w_i w_0 then Reject 9 else NoResult 9.
 
 
 Definition step8 c1 ymin y1 y2 fi hi z2 z4 ymax f0 h0 y4 w_ends idepth :=
@@ -235,7 +228,7 @@ Definition step7 c1 h0 f0 y2 ymin ymax y1 fi hi w_ends idepth :=
   let yleft := iSqrt (iDiv f0 h0) in
   (* this was reformulated from Ocaml because of no side-effects, double check the semantics in case there is a problem *)
   if ~~((iLt ymin y2) && (iLt yleft ymax)) then 
-    NoResult
+    NoResult 7
   else
     let yleft :=  iMax y1 yleft in
     let y4 := thin (avgwt yleft ymax one_sixteenth) in
@@ -263,7 +256,7 @@ Definition step7 c1 h0 f0 y2 ymin ymax y1 fi hi w_ends idepth :=
 	        (IT.integral_intBounds prec (dxmax h0 f0 ymax) idepth z4 z2 rd)
           in
           if iGt delta_0 delta_i then Reject 7 else
-            if containsB c1 Fone then NoResult else step8 c1 ymin y1 y2 fi hi z2 z4 ymax f0 h0 y4 w_ends idepth
+            if containsB c1 Fone then NoResult 7 else step8 c1 ymin y1 y2 fi hi z2 z4 ymax f0 h0 y4 w_ends idepth
       ) else step8 c1 ymin y1 y2 fi hi z2 z4 ymax f0 h0 y4 w_ends idepth.
 
 
@@ -300,7 +293,7 @@ Definition step6 c1 h0 f0 c2 hi fi y1 y2 idepth :=
 
 
 Definition step5 c1 h0 f0 c2 hi fi y1 y2 idepth :=
-if (Fgt (diam c2) float_half) then NoResult else step6 c1 h0 f0 c2 hi fi y1 y2 idepth.
+if (Fgt (diam c2) float_half) then NoResult 5 else step6 c1 h0 f0 c2 hi fi y1 y2 idepth.
 
 
 Definition step4 c1 h0 f0 c2 hi fi y1 y2 idepth :=
@@ -366,33 +359,34 @@ Definition update nineuple i :=
 | (x1,x2,x3,x4,x5,x6,k,x7,x8),7 => (x1,x2,x3,x4,x5,x6,S k,x7,x8)
 | (x1,x2,x3,x4,x5,x6,x7,k,x8),8 => (x1,x2,x3,x4,x5,x6,x7,S k,x8)
 | (x1,x2,x3,x4,x5,x6,x7,x8,k),9 => (x1,x2,x3,x4,x5,x6,x7,x8,S k)
-| n,i => n
+| n,i => (0,0,0,0,0,0,0,0,0)%nat (* just to ensure we never encounter this *)
 end.
  
-Fixpoint divideAndCheckRectangle y1 h0 idepth fuel nineuple lrects :=
+Fixpoint divideAndCheckRectangle y1 h0 idepth fuel nRej nNoRes lrects :=
   match fuel with
-  | O => (false,nineuple,lrects)
+  | O => (false,nRej,nNoRes,lrects)
   | S k =>
-    let c1 := iSqrt (iSub one_int (iSqr y1)) in
+    let c1 := iSqrt (iSub one (iSqr y1)) in
     (match step1 c1 h0 idepth with
-    | Reject i => (true,update nineuple i,(y1,h0,S k)::lrects)
-    | NoResult =>
-      let (y1a,y1b) := split y1 in
-      let (h0a,h0b) := split h0 in
-      let '(b1,n1,l1) := (divideAndCheckRectangle y1a h0a idepth k nineuple lrects) in 
+    | Reject i => (true,update nRej i,nNoRes,(y1,h0,S k)::lrects)
+    | NoResult i =>
+      let '(y1a,y1b) := split y1 in
+      let '(h0a,h0b) := split h0 in
+      let nNoRes := update nNoRes i in
+      let '(b1,n1,nnr1,l1) := (divideAndCheckRectangle y1a h0a idepth k nRej nNoRes lrects) in
       if b1 then  
-        let '(b2,n2,l2) := (divideAndCheckRectangle y1a h0b idepth k n1 l1) in
+        let '(b2,n2,nnr2,l2) := (divideAndCheckRectangle y1a h0b idepth k n1 nnr1 l1) in
         if b2 then
-          let '(b3,n3,l3) := (divideAndCheckRectangle y1b h0a idepth k n2 l2) in 
+          let '(b3,n3,nnr3,l3) := (divideAndCheckRectangle y1b h0a idepth k n2 nnr2 l2) in 
           if b3 then
-            let '(b4,n4,l4) := (divideAndCheckRectangle y1b h0b idepth k n3 l3) in
-            (b1 && b2 && b3 && b4,n4,l4)
+            let '(b4,n4,nnr4,l4) := (divideAndCheckRectangle y1b h0b idepth k n3 nnr3 l3) in
+            (b1 && b2 && b3 && b4,n4,nnr4,l4)
           else
-            (b3,n3,l3)
+            (b3,n3,nnr3,l3)
         else
-          (b2,n2,l2)
+          (b2,n2,nnr2,l2)
       else
-        (b1,n1,l1)
+        (b1,n1,nnr1,l1)
      end) end.
 
 Open Scope nat_scope.
@@ -400,25 +394,24 @@ Open Scope nat_scope.
 Definition main idepth depth :=
   let y1 := int01 in
   let h0 := int010 in
-    divideAndCheckRectangle y1 h0 idepth depth (0,0,0,0,0,0,0,0,0) List.nil.
+    divideAndCheckRectangle y1 h0 idepth depth (0,0,0,0,0,0,0,0,0) (0,0,0,0,0,0,0,0,0) List.nil.
 
      (* if iLt w w_ends then reject c1 h0 6); *)
 End Doubbub.
 End Examples.
-(* Require Import Interval_tactic. *)
-(* Require Import Interval_generic_ops. *)
-(* Require Import Interval_transcend. *)
+
 Require Import Interval_bigint_carrier.
 Require Import Interval_specific_ops.
 Module F := SpecificFloat BigIntRadix2.
 Require Import BigZ.
-Definition prec60 := (60%bigZ) : F.precision.
 Module Test := Examples F.
-Print Test.
-Print Test.main.
+
+Definition prec60 := (60%bigZ) : F.precision.
 Definition rd := rnd_NE.
+
 Open Scope nat_scope.
-Eval vm_compute in Test.main prec60 rd 5 50.
+
+Eval vm_compute in Test.main prec60 rd 5 20.
 
 Eval vm_compute in Test.s1.
 Eval vm_compute in Test.s2.
