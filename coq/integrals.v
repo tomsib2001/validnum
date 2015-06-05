@@ -188,13 +188,24 @@ Definition diam rd x :=
 
 
 Definition integral_intBounds depth (a b : I.type) rd :=
-  match a,b with
-    | Inan, _ => Inan
-    | _, Inan => Inan
-    | Ibnd _ b1, Ibnd a2 _ =>
+  if a is Ibnd _ b1 then
+    if b is Ibnd a2 _ then
       let sab := I.mul prec (thin (diam rd a)) (FInt.join (thin F.zero) (iF a)) in
       let scd := I.mul prec (thin (diam rd b)) (FInt.join (thin F.zero) (iF b)) in
-      I.add prec (I.add prec sab scd) (integral depth b1 a2) end.
+      I.add prec (I.add prec sab scd) (integral depth b1 a2)
+    else
+      Inan
+  else
+    Inan.
+
+
+(* match a,b with *)
+(*     | Inan, _ => Inan *)
+(*     | _, Inan => Inan *)
+(*     | Ibnd _ b1, Ibnd a2 _ => *)
+(*       let sab := I.mul prec (thin (diam rd a)) (FInt.join (thin F.zero) (iF a)) in *)
+(*       let scd := I.mul prec (thin (diam rd b)) (FInt.join (thin F.zero) (iF b)) in *)
+(*       I.add prec (I.add prec sab scd) (integral depth b1 a2) end. *)
 
 End integral.
 

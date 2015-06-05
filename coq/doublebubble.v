@@ -25,29 +25,78 @@ Module Extras := ExtraFloatInterval F.
 
 Import Extras.
 
+Notation float := F.type.
+Notation intervalle := FInt.I.type.
+
 Definition I0 := Ibnd F.zero F.zero. 
 
-Definition Flt (x y : F.type) :=
+(* Boolean compaisons on float floats: return false
+   when the comparison is either false or not defined (Nans) *)
+Definition Flt (x y : float) :=
   match F.cmp x y with
     | Xlt => true
     | _ => false
   end.
 
-Definition Fle (x y : F.type) :=
+Definition Feq (x y : float) :=
   match F.cmp x y with
-    | Xlt => true
     | Xeq => true
     | _ => false
   end.
 
-Definition Fgt (x y : F.type) := Flt y x.
-Definition Fge (x y : F.type) := Fle y x.
+Definition Fle (x y : float) :=
+  (Flt x y) || (Feq x y).
+
+Definition Fgt (x y : float) := Flt y x.
+
+Definition Fge (x y : float) := Fle y x.
+
+(*Fmax a b is equal to 
+- b when a <= b
+- a when b < a
+- Fnan if the comparison is undefined. *)
 Definition Fmax a b := 
-   if Fle a b then b else a.
+  match F.cmp a b with
+    | Xlt => b
+    | Xeq => b
+    | Xgt => a
+    | Xund => F.nan
+  end.
 
-Notation intervalle := FInt.I.type.
-Notation float := F.type.
 
+(* Tests whether i is an empty interval or not,
+   according to the semantics prescribed by the
+   "contains" predicate *)
+Definition not_empty (i : intervalle) : bool := 
+  match i with
+    | Inan => true
+    | Ibnd a b => 
+      if (F.real a) && (F.real b) then Flt a b
+       else true
+  end.
+
+Definition is_empty (i : intervalle) : bool := 
+  ~~ (not_empty i).
+
+Print contains.
+
+Definition is_nan (f : float) := ~~ F.real f.
+
+(* Boolean version of contains *)
+Definition containsB (i : intervalle) (f : float) :=
+  F.real f &&
+  (match i with
+      | Inan => true
+      | Ibnd a b => 
+         if F.real a then (Fle a f && ((is_nan b) || Fle f b))
+         else (Fle f b || is_nan b)
+   end).
+
+
+(* Boolean test for the intervals:
+  iLt i1 i2 := forall x \in i1, forall y \in i2, x < y,
+   where \in corresponds to the semantics of contains
+    *)
 Definition iLt (i1 i2 : intervalle) := 
   if i1 is Ibnd l1 r1
   then if i2 is Ibnd l2 r2
@@ -81,11 +130,6 @@ Definition compare (x y a b : intervalle) :=
     if iGt x y then b else
       FInt.I.join a b.
 
-Definition is_empty x : bool := 
-  match x with
-    | Inan => false
-    | Ibnd a b => Flt b a
-  end.
 
 
 Section Doubbub.
@@ -127,6 +171,16 @@ Definition one_int := thin (Fone).
 
 (* end constants *)
 
+(* pasted comment from C++ code: *)
+(* returns a point between x and y.  Rounding is not material here. *)
+Definition avgwt (x y : intervalle) (w : float) : float :=
+  match x,y with
+    | Inan,_ => F.nan
+    | _,Inan => F.nan
+    | Ibnd x1 x2,Ibnd y1 y2 => 
+      F.add rd prec (F.mul rd prec (F.sub rd prec Fone w) x2) (F.mul rd prec w y1)
+  end.
+
 
 (* sanity checks *)
 
@@ -135,6 +189,11 @@ Definition s2 := (FInt.I.meet (iNeg one) one). (* should be empty *)
 Definition small_interval := Ibnd F.zero (F.div rd prec (F.fromZ 1) (F.fromZ 32)).
 Definition s3 := (iGeq (iMult i1000 one_int) i996).
 Definition s4 := (iLeq (iMult five small_interval) (one)).
+Definition s5 := avgwt (Ibnd (F.fromZ 1) (F.fromZ 2)) (Ibnd (F.fromZ 3) (F.fromZ 10)) one_sixteenth.
+Definition s6 := compare (Ibnd (F.fromZ 1) (F.fromZ 2)) (Ibnd (F.fromZ 3) (F.fromZ 10)) int01 int010. 
+Definition s7 := compare (Ibnd (F.fromZ 3) (F.fromZ 10)) (Ibnd (F.fromZ 1) (F.fromZ 2)) int01 int010. 
+Definition s8 := IT.integral_intBounds prec (fun x => x) 5 (Ibnd (F.fromZ 1) (F.fromZ 2)) (Ibnd (F.fromZ 3) (F.fromZ 10)).
+
 
 (* end sanity checks *)
 
@@ -162,15 +221,6 @@ iMult (iPow (iSub (Y_max) (iPow (Z) (2))) (2)) (iDiv (iMult (two_int) (iSub (iMu
 
 (* end functions which are integrated *)
 
-(* pasted comment from C++ code: *)
-(* returns a point between x and y.  Rounding is not material here. *)
-Definition avgwt (x y : intervalle) (w : F.type) : F.type :=
-  match x,y with
-    | Inan,_ => F.nan
-    | _,Inan => F.nan
-    | Ibnd x1 x2,Ibnd y1 y2 => 
-      F.add rd prec (F.mul rd prec (F.sub rd prec Fone w) x2) (F.mul rd prec w y1)
-  end.
 
 
 
@@ -184,11 +234,6 @@ Definition diam (x : intervalle) : float :=
 
 Search "max" in FInt.
 
-Definition containsB x f :=
-  match x with
-    | Inan => true
-    | Ibnd a b => Fle a f && Fle f b
-end.
 
 Inductive result :=
 | Reject : nat -> result
@@ -413,14 +458,13 @@ Open Scope nat_scope.
 
 Eval vm_compute in Test.main prec60 rd 5 20.
 
+(* battery of tests *)
+
 Eval vm_compute in Test.s1.
 Eval vm_compute in Test.s2.
 Eval vm_compute in (Test.s3 prec60).
 Eval vm_compute in (Test.s4 prec60 rd).
-Import Test.
-
-Print Test.divideAndCheckRectangle.
-Import Test.
-
-(* battery of tests *)
-Eval vm_compute in Test.compare I0 I0 I0 I0.
+Eval vm_compute in (Test.s5 prec60 rd). (* avgwt seems to behave like in Ocaml *)
+Eval vm_compute in (Test.s6).
+Eval vm_compute in (Test.s7). (* compare seems to behave like in Ocaml *)
+Eval vm_compute in (Test.s8).
