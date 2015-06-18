@@ -234,7 +234,7 @@ Definition s5 := avgwt [|1, 2|] [|3, 10|] Fone_sixteenth.
 Definition s6 := compare [|1, 2|] [|3, 10|] [|0, 1|] [|0, 10|].
 Definition s7 := compare [|3, 10|] [|1, 2|] [|0, 1|] [|0, 10|].
 Definition s8 := IT.integral_intBounds prec (fun x => x) 5 [|1, 2|] [|3, 10|] rd.
-
+Definition s9 := iNeq Inan i0_1.
 
 (* end sanity checks *)
 
@@ -274,9 +274,11 @@ Definition diam (x : intervalle) : float :=
    and therefore bisecting futher is required in order to conclude. *)
 Inductive result :=
 | Reject : nat -> result
-| NoResult : forall A : Type, A -> nat -> result.
+| NoResult : (* forall A : Type, seq A -> *) nat -> result
+| DebugNoRes : (seq intervalle) -> nat -> result
+| DebugRej : (seq intervalle) -> nat -> result.
 
-Arguments NoResult {A} _ _ .
+(* Arguments NoResult {A} _ _ . *)
 (* This is the last step of the paper: the computation ends with either a (Reject 9) or
    a (NoResult 9) *)
 
@@ -292,7 +294,7 @@ Definition step9 z1 z2 z3 z4 hi fi ymin ymax w_ends y1 y4 f0 h0 idepth :=
 	 (i2)
 	 w_base
       ) in
-  if iNeq w_i w_0 then Reject 9 else NoResult tt 9.
+  if iNeq w_i w_0 then Reject 9 else NoResult 9.
 
 
 Definition step8 c1 ymin y1 y2 fi hi z2 z4 ymax f0 h0 y4 w_ends idepth :=
@@ -301,12 +303,12 @@ Definition step8 c1 ymin y1 y2 fi hi z2 z4 ymax f0 h0 y4 w_ends idepth :=
   let z3 := iSqrt(iSub y2 ymin) in
   let delta_i := IT.integral_intBounds prec (dxmin hi fi ymin) idepth z1 z3 rd in
   let delta_0 := IT.integral_intBounds prec (dxmax h0 f0 ymax) idepth z4 z2 rd in
-  if iLt delta_i delta_0 then Reject 8 else
+  if iLt delta_i delta_0 then  DebugRej [:: y1; h0; delta_i ; delta_0] (* [:: h0 ; f0 ; ymax ; z4; z2; delta_0;  delta_i] *) 8 else
   let delta_0 :=
     iPlus
       delta_0
       (IT.integral_intBounds prec (dx h0 f0) idepth y1 y4 rd) in
-  if iNeq delta_i delta_0 then Reject 8
+  if iNeq delta_i delta_0 then DebugRej [:: h0] (* [:: h0 ; f0 ; ymax ; z4; z2; delta_0;  delta_i] *) 8
   else step9 z1 z2 z3 z4 hi fi ymin ymax w_ends y1 y4 f0 h0 idepth.
 
 
@@ -314,7 +316,7 @@ Definition step7 c1 h0 f0 y2 ymin ymax y1 fi hi w_ends idepth :=
   let yleft_init := iSqrt (iDiv f0 h0) in
   (* this was reformulated from Ocaml because of no side-effects, double check the semantics in case there is a problem *)
   if ~~((iLt ymin y2) && (iLt yleft_init ymax)) then
-    NoResult [:: ymin; y2; yleft_init; ymax] 7
+    DebugNoRes (* [:: ymin; y2; yleft_init; ymax] *) List.nil 7
   else
     let yleft :=  iMax y1 yleft_init in
     let y4 := thin (avgwt yleft ymax Fone_sixteenth) in
@@ -342,7 +344,7 @@ Definition step7 c1 h0 f0 y2 ymin ymax y1 fi hi w_ends idepth :=
 	        (IT.integral_intBounds prec (dxmax h0 f0 ymax) idepth z4 z2 rd)
           in
           if iGt delta_0 delta_i then Reject 7 else
-            if containsB c1 Fone then NoResult tt 7 else step8 c1 ymin y1 y2 fi hi z2 z4 ymax f0 h0 y4 w_ends idepth
+            if containsB c1 Fone then NoResult 7 else step8 c1 ymin y1 y2 fi hi z2 z4 ymax f0 h0 y4 w_ends idepth
       ) else step8 c1 ymin y1 y2 fi hi z2 z4 ymax f0 h0 y4 w_ends idepth.
 
 
@@ -377,9 +379,8 @@ Definition step6 c1 h0 f0 c2 hi fi y1 y2 idepth :=
                 ) in
      if iLt w w_ends then Reject 6 else step7 c1 h0 f0 y2 ymin ymax y1  fi hi w_ends idepth)) else step7 c1 h0 f0 y2 ymin ymax y1  fi hi w_ends idepth.
 
-
 Definition step5 c1 h0 f0 c2 hi fi y1 y2 idepth :=
-if (Fgt (diam c2) Fhalf) then NoResult tt 5 else step6 c1 h0 f0 c2 hi fi y1 y2 idepth.
+if (Fgt (diam c2) Fhalf) || (~~(F.real (diam c2))) then NoResult 5 else step6 c1 h0 f0 c2 hi fi y1 y2 idepth.
 
 
 Definition step4 c1 h0 f0 c2 hi fi y1 y2 idepth :=
@@ -420,7 +421,7 @@ Definition step2 c1 h0 idepth :=
       )
       (iSub ione (iSqr c1))
   in
-  if iNeq (iPlus (iPow c2 2) t) ione then
+  if (iNeq (iPlus (iPow c2 2) t) ione) then
     Reject 2
   else step3 t fi hi c1 c2 h0 f0 y1 idepth.
 
@@ -454,35 +455,36 @@ end.
 
 
 
-Fixpoint divideAndCheckRectangle y1 h0 idepth fuel nRej nNoRes lrects {struct fuel} :=
-  match fuel with
-  | O => (false,nRej,nNoRes,lrects)
-  | S k =>
-    let c1 := iSqrt (iSub ione (iSqr y1)) in
-    (match step1 c1 h0 idepth with
-    | Reject i => (true, update nRej i, nNoRes, (y1, h0, S k)::lrects)
-    | NoResult _ _ i =>
-      let '(y1a,y1b) := split y1 in
-      let '(h0a,h0b) := split h0 in
-      let nNoRes := update nNoRes i in
-      let '(b1,n1,nnr1,l1) := (divideAndCheckRectangle y1a h0a idepth k nRej nNoRes lrects) in
-      if b1 then
-        let '(b2,n2,nnr2,l2) := (divideAndCheckRectangle y1a h0b idepth k n1 nnr1 l1) in
-        if b2 then
-          let '(b3,n3,nnr3,l3) := (divideAndCheckRectangle y1b h0a idepth k n2 nnr2 l2) in
-          if b3 then
-            let '(b4,n4,nnr4,l4) := (divideAndCheckRectangle y1b h0b idepth k n3 nnr3 l3) in
-            (b4,n4,nnr4,l4)
-          else
-            (b3,n3,nnr3,l3)
-        else
-          (b2,n2,nnr2,l2)
-      else
-        (b1,n1,nnr1,l1)
-     end) end.
+(* Fixpoint divideAndCheckRectangle y1 h0 idepth fuel nRej nNoRes lrects {struct fuel} := *)
+(*   match fuel with *)
+(*   | O => (false,nRej,nNoRes,lrects) *)
+(*   | S k => *)
+(*     let c1 := iSqrt (iSub ione (iSqr y1)) in *)
+(*     (match step1 c1 h0 idepth with *)
+(*     | Reject i => (true, update nRej i, nNoRes, (y1, h0, S k)::lrects) *)
+(*     | NoResult i => *)
+(*       let '(y1a,y1b) := split y1 in *)
+(*       let '(h0a,h0b) := split h0 in *)
+(*       let nNoRes := update nNoRes i in *)
+(*       let '(b1,n1,nnr1,l1) := (divideAndCheckRectangle y1a h0a idepth k nRej nNoRes lrects) in *)
+(*       if b1 then *)
+(*         let '(b2,n2,nnr2,l2) := (divideAndCheckRectangle y1a h0b idepth k n1 nnr1 l1) in *)
+(*         if b2 then *)
+(*           let '(b3,n3,nnr3,l3) := (divideAndCheckRectangle y1b h0a idepth k n2 nnr2 l2) in *)
+(*           if b3 then *)
+(*             let '(b4,n4,nnr4,l4) := (divideAndCheckRectangle y1b h0b idepth k n3 nnr3 l3) in *)
+(*             (b4,n4,nnr4,l4) *)
+(*           else *)
+(*             (b3,n3,nnr3,l3) *)
+(*         else *)
+(*           (b2,n2,nnr2,l2) *)
+(*       else *)
+(*         (b1,n1,nnr1,l1) *)
+(*      end) *)
+(*  end. *)
 
 
-Fixpoint divideAndCheckRectangle_debug y1 h0 idepth fuel nRej nNoRes (ldebug : seq (seq intervalle))
+Fixpoint divideAndCheckRectangle_debug y1 h0 idepth fuel nRej nNoRes (ldebug : seq (nat * seq intervalle))
          {struct fuel} :=
   match fuel with
   | O => (false,nRej,nNoRes,ldebug)
@@ -490,34 +492,81 @@ Fixpoint divideAndCheckRectangle_debug y1 h0 idepth fuel nRej nNoRes (ldebug : s
     let c1 := iSqrt (iSub ione (iSqr y1)) in
     (match step1 c1 h0 idepth with
     | Reject i => (true, update nRej i, nNoRes, ldebug)
-    | NoResult _ d i =>
-      (true, nRej, nNoRes, d :: ldebug)
-    | NoResult _ _ i => (true, nRej, nNoRes, ldebug)
-     (*  let '(y1a,y1b) := split y1 in *)
-     (*  let '(h0a,h0b) := split h0 in *)
-     (*  let nNoRes := update nNoRes i in *)
-     (*  let '(b1,n1,nnr1,l1) := (divideAndCheckRectangle y1a h0a idepth k nRej nNoRes ldebug) in *)
-     (*  if b1 then *)
-     (*    let '(b2,n2,nnr2,l2) := (divideAndCheckRectangle y1a h0b idepth k n1 nnr1 l1) in *)
-     (*    if b2 then *)
-     (*      let '(b3,n3,nnr3,l3) := (divideAndCheckRectangle y1b h0a idepth k n2 nnr2 l2) in *)
-     (*      if b3 then *)
-     (*        let '(b4,n4,nnr4,l4) := (divideAndCheckRectangle y1b h0b idepth k n3 nnr3 l3) in *)
-     (*        (b4,n4,nnr4,l4) *)
-     (*      else *)
-     (*        (b3,n3,nnr3,l3) *)
-     (*    else *)
-     (*      (b2,n2,nnr2,l2) *)
-     (*  else *)
-     (*    (b1,n1,nnr1,l1) *)
+    | DebugNoRes d i =>
+      let '(y1a,y1b) := split y1 in
+      let '(h0a,h0b) := split h0 in
+      let nNoRes := update nNoRes i in
+      let '(b1,n1,nnr1,l1) := (divideAndCheckRectangle_debug y1a h0a idepth k nRej nNoRes ((i,d)::ldebug)) in
+      if b1 then
+        let '(b2,n2,nnr2,l2) := (divideAndCheckRectangle_debug y1a h0b idepth k n1 nnr1 l1) in
+        if b2 then
+          let '(b3,n3,nnr3,l3) := (divideAndCheckRectangle_debug y1b h0a idepth k n2 nnr2 l2) in
+          if b3 then
+            let '(b4,n4,nnr4,l4) := (divideAndCheckRectangle_debug y1b h0b idepth k n3 nnr3 l3) in
+            (b4,n4,nnr4,l4)
+          else
+            (b3,n3,nnr3,l3)
+        else
+          (b2,n2,nnr2,l2)
+      else
+        (b1,n1,nnr1,l1)
+      (* (true, nRej, nNoRes, d :: ldebug) *)
+    (* | DebugNoRes _ _ => *)
+    (*   (true, nRej, nNoRes, ldebug) *)
+    | DebugRej d i => (true, update nRej i, nNoRes, (i,d)::ldebug)
+      (* let '(y1a,y1b) := split y1 in *)
+      (* let '(h0a,h0b) := split h0 in *)
+      (* let nRej := update nRej i in *)
+      (* let '(b1,n1,nnr1,l1) := (divideAndCheckRectangle_debug y1a h0a idepth k nRej nNoRes ((i,d)::ldebug)) in *)
+      (* if b1 then *)
+      (*   let '(b2,n2,nnr2,l2) := (divideAndCheckRectangle_debug y1a h0b idepth k n1 nnr1 l1) in *)
+      (*   if b2 then *)
+      (*     let '(b3,n3,nnr3,l3) := (divideAndCheckRectangle_debug y1b h0a idepth k n2 nnr2 l2) in *)
+      (*     if b3 then *)
+      (*       let '(b4,n4,nnr4,l4) := (divideAndCheckRectangle_debug y1b h0b idepth k n3 nnr3 l3) in *)
+      (*       (b4,n4,nnr4,l4) *)
+      (*     else *)
+      (*       (b3,n3,nnr3,l3) *)
+      (*   else *)
+      (*     (b2,n2,nnr2,l2) *)
+      (* else *)
+      (*   (b1,n1,nnr1,l1) *)
+    (* (true, nRej, nNoRes, d::ldebug) *)
+    (* | DebugRej _ _ => *)
+    (*   (true, nRej, nNoRes, ldebug) *)
+    | NoResult  i => (* (true, nRej, nNoRes, ldebug) *)
+      let '(y1a,y1b) := split y1 in
+      let '(h0a,h0b) := split h0 in
+      let nNoRes := update nNoRes i in
+      let '(b1,n1,nnr1,l1) := (divideAndCheckRectangle_debug y1a h0a idepth k nRej nNoRes ldebug) in
+      if b1 then
+        let '(b2,n2,nnr2,l2) := (divideAndCheckRectangle_debug y1a h0b idepth k n1 nnr1 l1) in
+        if b2 then
+          let '(b3,n3,nnr3,l3) := (divideAndCheckRectangle_debug y1b h0a idepth k n2 nnr2 l2) in
+          if b3 then
+            let '(b4,n4,nnr4,l4) := (divideAndCheckRectangle_debug y1b h0b idepth k n3 nnr3 l3) in
+            (b4,n4,nnr4,l4)
+          else
+            (b3,n3,nnr3,l3)
+        else
+          (b2,n2,nnr2,l2)
+      else
+        (b1,n1,nnr1,l1)
       end) end.
 
 
 
-Definition main idepth depth :=
-  let y1 := [|0, 1|] in
-  let h0 := [|0, 10|] in
-    divideAndCheckRectangle y1 h0 idepth depth (0,0,0,0,0,0,0,0,0) (0,0,0,0,0,0,0,0,0) List.nil.
+(* Definition main idepth depth := *)
+(*   let y1 := [|0, 1|] in *)
+(*   let h0 := [|0, 10|] in *)
+(*     divideAndCheckRectangle y1 h0 idepth depth (0,0,0,0,0,0,0,0,0) (0,0,0,0,0,0,0,0,0) List.nil. *)
+
+
+Definition main_debug idepth depth :=
+  let y1 := Ibnd Fhalf (F.fromZ 1) in
+  let h0 := [|5, 10|] in
+    divideAndCheckRectangle_debug y1 h0 idepth depth (0,0,0,0,0,0,0,0,0) (0,0,0,0,0,0,0,0,0) List.nil.
+
 
      (* if iLt w w_ends then reject c1 h0 6); *)
 End Doubbub.
@@ -529,7 +578,7 @@ Module F := SpecificFloat BigIntRadix2.
 Require Import BigZ.
 Module Test := Examples F.
 
-Definition prec60 := (60%bigZ) : F.precision.
+Definition prec60 := (30%bigZ) : F.precision.
 Definition rd := rnd_DN.
 
 Open Scope nat_scope.
@@ -539,8 +588,8 @@ About Test.step2_debug.
 (* (hi, y1, fi, f0, c2, t, iPlus (iPow c2 2) t) and the results is Reject 2 if the
    last interval does not contain 1 *)
 
-Eval vm_compute in Test.main prec60 rd 5 2.
-
+Time Eval vm_compute in Test.main_debug prec60 rd 5 11.
+(* Time Eval vm_compute in Test.main_debug prec60 rd 5 11. *)
 (* battery of tests *)
 
 Eval vm_compute in Test.s1.
@@ -551,3 +600,5 @@ Eval vm_compute in (Test.s5 prec60 rd). (* avgwt seems to behave like in Ocaml *
 Eval vm_compute in (Test.s6).
 Eval vm_compute in (Test.s7). (* compare seems to behave like in Ocaml *)
 Eval vm_compute in (Test.s8 prec60 rd).
+Check Test.s9.
+Eval vm_compute in Test.s9.
