@@ -1,6 +1,4 @@
 Require Import List.
-(* Require Import Reals. *)
-(* Require Import Fourier. *)
 Require Import Interval_missing.
 Require Import Fcore.
 Require Import Interval_xreal.
@@ -176,7 +174,8 @@ Definition iPlus := FInt.add prec.
 Definition iSub := FInt.sub prec.
 Definition iMult := FInt.mul prec.
 Definition iDiv := FInt.div prec.
-Definition iSqrt := FInt.sqrt prec.
+Definition iSqrt' := FInt.sqrt prec.
+Definition iSqrt x := iSqrt' (FInt.I.meet (Ibnd (F.fromZ 0) F.nan) x).
 Definition iSqr := fun i => FInt.power_int prec i 2.
 Definition iPow x n := FInt.power_int prec x n.
 Definition iNeg := FInt.neg.
@@ -204,6 +203,7 @@ Definition i998 := [| 998 |].
 Definition i0_1 := [|0, 1|].
 Definition i0_10 := [|0, 10|].
 Definition Ftwoandahalf := (Fdiv ( 5) ( 2)).
+Definition F2powneg5 := (Fdiv ( 1) ( 32)).
 Definition itwoandahalf := [| Ftwoandahalf|].
 
 
@@ -235,7 +235,9 @@ Definition s6 := compare [|1, 2|] [|3, 10|] [|0, 1|] [|0, 10|].
 Definition s7 := compare [|3, 10|] [|1, 2|] [|0, 1|] [|0, 10|].
 Definition s8 := IT.integral_intBounds prec (fun x => x) 5 [|1, 2|] [|3, 10|] rd.
 Definition s9 := iNeq Inan i0_1.
-
+Definition s10 := FInt.I.meet [|-1, 10|] (Ibnd (F.fromZ 0) F.nan).
+Definition s11 := iSqrt [| 1,2 |].
+Definition s12 := iSqrt [| 0,1 |].
 (* end sanity checks *)
 
 
@@ -294,8 +296,7 @@ Definition step9 z1 z2 z3 z4 hi fi ymin ymax w_ends y1 y4 f0 h0 idepth :=
 	 (i2)
 	 w_base
       ) in
-  if iNeq w_i w_0 then Reject 9 else NoResult 9.
-
+  if iNeq w_i w_0 then Reject 9 else (* DebugNoRes [::y1;h0;w_i;w_0;w_base; w_ends; y1; ymin] *) NoResult 9.
 
 Definition step8 c1 ymin y1 y2 fi hi z2 z4 ymax f0 h0 y4 w_ends idepth :=
   let t := iSqrt(iSub y1 ymin) in
@@ -303,12 +304,12 @@ Definition step8 c1 ymin y1 y2 fi hi z2 z4 ymax f0 h0 y4 w_ends idepth :=
   let z3 := iSqrt(iSub y2 ymin) in
   let delta_i := IT.integral_intBounds prec (dxmin hi fi ymin) idepth z1 z3 rd in
   let delta_0 := IT.integral_intBounds prec (dxmax h0 f0 ymax) idepth z4 z2 rd in
-  if iLt delta_i delta_0 then  DebugRej [:: y1; h0; delta_i ; delta_0] (* [:: h0 ; f0 ; ymax ; z4; z2; delta_0;  delta_i] *) 8 else
+  if iLt delta_i delta_0 then  Reject (* [:: y1; h0; delta_i ; delta_0] *) (* [:: h0 ; f0 ; ymax ; z4; z2; delta_0;  delta_i] *) 8 else
   let delta_0 :=
     iPlus
       delta_0
       (IT.integral_intBounds prec (dx h0 f0) idepth y1 y4 rd) in
-  if iNeq delta_i delta_0 then DebugRej [:: h0] (* [:: h0 ; f0 ; ymax ; z4; z2; delta_0;  delta_i] *) 8
+  if iNeq delta_i delta_0 then Reject (* [:: h0] *) (* [:: h0 ; f0 ; ymax ; z4; z2; delta_0;  delta_i] *) 8
   else step9 z1 z2 z3 z4 hi fi ymin ymax w_ends y1 y4 f0 h0 idepth.
 
 
@@ -316,7 +317,7 @@ Definition step7 c1 h0 f0 y2 ymin ymax y1 fi hi w_ends idepth :=
   let yleft_init := iSqrt (iDiv f0 h0) in
   (* this was reformulated from Ocaml because of no side-effects, double check the semantics in case there is a problem *)
   if ~~((iLt ymin y2) && (iLt yleft_init ymax)) then
-    DebugNoRes (* [:: ymin; y2; yleft_init; ymax] *) List.nil 7
+    DebugNoRes [:: f0; h0] (* List.nil *) 7
   else
     let yleft :=  iMax y1 yleft_init in
     let y4 := thin (avgwt yleft ymax Fone_sixteenth) in
@@ -380,7 +381,7 @@ Definition step6 c1 h0 f0 c2 hi fi y1 y2 idepth :=
      if iLt w w_ends then Reject 6 else step7 c1 h0 f0 y2 ymin ymax y1  fi hi w_ends idepth)) else step7 c1 h0 f0 y2 ymin ymax y1  fi hi w_ends idepth.
 
 Definition step5 c1 h0 f0 c2 hi fi y1 y2 idepth :=
-if (Fgt (diam c2) Fhalf) || (~~(F.real (diam c2))) then NoResult 5 else step6 c1 h0 f0 c2 hi fi y1 y2 idepth.
+if (Fgt (diam c2) Fhalf) || (~~(F.real (diam c2))) then DebugNoRes [::c2] 5 else step6 c1 h0 f0 c2 hi fi y1 y2 idepth.
 
 
 Definition step4 c1 h0 f0 c2 hi fi y1 y2 idepth :=
@@ -439,20 +440,22 @@ end.
 
 Open Scope nat_scope.
 
-Definition update nineuple i :=
-  match nineuple,i with
-| (k,x1,x2,x3,x4,x5,x6,x7,x8),1 => (S k,x1,x2,x3,x4,x5,x6,x7,x8)
-| (x1,k,x2,x3,x4,x5,x6,x7,x8),2 => (x1,S k,x2,x3,x4,x5,x6,x7,x8)
-| (x1,x2,k,x3,x4,x5,x6,x7,x8),3 => (x1,x2,S k,x3,x4,x5,x6,x7,x8)
-| (x1,x2,x3,k,x4,x5,x6,x7,x8),4 => (x1,x2,x3,S k,x4,x5,x6,x7,x8)
-| (x1,x2,x3,x4,k,x5,x6,x7,x8),5 => (x1,x2,x3,x4,S k,x5,x6,x7,x8)
-| (x1,x2,x3,x4,x5,k,x6,x7,x8),6 => (x1,x2,x3,x4,x5,S k,x6,x7,x8)
-| (x1,x2,x3,x4,x5,x6,k,x7,x8),7 => (x1,x2,x3,x4,x5,x6,S k,x7,x8)
-| (x1,x2,x3,x4,x5,x6,x7,k,x8),8 => (x1,x2,x3,x4,x5,x6,x7,S k,x8)
-| (x1,x2,x3,x4,x5,x6,x7,x8,k),9 => (x1,x2,x3,x4,x5,x6,x7,x8,S k)
-| n,i => (0,0,0,0,0,0,0,0,0)%nat (* just to ensure we never encounter this *)
-end.
+Inductive ninuple := 
+  | tuple9 : nat -> nat -> nat -> nat -> nat -> nat -> nat -> nat -> nat -> ninuple.
 
+Definition update (n : ninuple) (i : nat) :=
+  match n,i with
+| (tuple9 k x1 x2 x3 x4 x5 x6 x7 x8), 1 => (tuple9 (S k) x1 x2 x3 x4 x5 x6 x7 x8)
+| (tuple9 x1 k x2 x3 x4 x5 x6 x7 x8), 2 => (tuple9 x1 (S k) x2 x3 x4 x5 x6 x7 x8)
+| (tuple9 x1 x2 k x3 x4 x5 x6 x7 x8), 3 => (tuple9 x1 x2 (S k) x3 x4 x5 x6 x7 x8)
+| (tuple9 x1 x2 x3 k x4 x5 x6 x7 x8), 4 => (tuple9 x1 x2 x3 (S k) x4 x5 x6 x7 x8)
+| (tuple9 x1 x2 x3 x4 k x5 x6 x7 x8), 5 => (tuple9 x1 x2 x3 x4 (S k) x5 x6 x7 x8)
+| (tuple9 x1 x2 x3 x4 x5 k x6 x7 x8), 6 => (tuple9 x1 x2 x3 x4 x5 (S k) x6 x7 x8)
+| (tuple9 x1 x2 x3 x4 x5 x6 k x7 x8), 7 => (tuple9 x1 x2 x3 x4 x5 x6 (S k) x7 x8)
+| (tuple9 x1 x2 x3 x4 x5 x6 x7 k x8), 8 => (tuple9 x1 x2 x3 x4 x5 x6 x7 (S k) x8)
+| (tuple9 x1 x2 x3 x4 x5 x6 x7 x8 k), 9 => (tuple9 x1 x2 x3 x4 x5 x6 x7 x8 (S k))
+| n, i => (tuple9 0 0 0 0 0 0 0 0 0)%nat (* just to ensure we never encounter this *)
+end.
 
 
 (* Fixpoint divideAndCheckRectangle y1 h0 idepth fuel nRej nNoRes lrects {struct fuel} := *)
@@ -561,11 +564,12 @@ Fixpoint divideAndCheckRectangle_debug y1 h0 idepth fuel nRej nNoRes (ldebug : s
 (*   let h0 := [|0, 10|] in *)
 (*     divideAndCheckRectangle y1 h0 idepth depth (0,0,0,0,0,0,0,0,0) (0,0,0,0,0,0,0,0,0) List.nil. *)
 
+Definition all_zeros9 := tuple9 0 0 0 0 0 0 0 0 0.
 
 Definition main_debug idepth depth :=
-  let y1 := Ibnd Fhalf (F.fromZ 1) in
-  let h0 := [|5, 10|] in
-    divideAndCheckRectangle_debug y1 h0 idepth depth (0,0,0,0,0,0,0,0,0) (0,0,0,0,0,0,0,0,0) List.nil.
+  let y1 := Ibnd (F.fromZ 0) (F.fromZ 1) in
+  let h0 := Ibnd (F2powneg5) (F.fromZ 10) in
+    divideAndCheckRectangle_debug y1 h0 idepth depth all_zeros9 all_zeros9 List.nil.
 
 
      (* if iLt w w_ends then reject c1 h0 6); *)
@@ -583,10 +587,9 @@ Definition rd := rnd_DN.
 
 Open Scope nat_scope.
 
-About Test.step2_debug.
-
 (* (hi, y1, fi, f0, c2, t, iPlus (iPow c2 2) t) and the results is Reject 2 if the
    last interval does not contain 1 *)
+
 
 Time Eval vm_compute in Test.main_debug prec60 rd 5 11.
 (* Time Eval vm_compute in Test.main_debug prec60 rd 5 11. *)
@@ -602,3 +605,5 @@ Eval vm_compute in (Test.s7). (* compare seems to behave like in Ocaml *)
 Eval vm_compute in (Test.s8 prec60 rd).
 Check Test.s9.
 Eval vm_compute in Test.s9.
+Eval vm_compute in Test.s11 prec60.
+Eval vm_compute in Test.s12 prec60.
