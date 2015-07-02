@@ -92,7 +92,7 @@ CAMLYACC = ocamlyacc
 # LIBS=$(WITHGRAPHICS) $(WITHUNIX) $(WITHSTR) $(WITHNUMS) $(WITHTHREADS)\
 # $(WITHDBM)
 
-# LIBS=$(WITHGRAPHICS)
+LIBS=$(WITHSTR)
 
 # Should be set to -custom if you use any of the libraries above
 # or if any C code have to be linked with your program
@@ -106,7 +106,7 @@ WITHGRAPHICS =graphics.cma -cclib -lgraphics -cclib -L/usr/X11R6/lib -cclib -lX1
 
 WITHUNIX =unix.cma -cclib -lunix
 
-WITHSTR =str.cma -cclib -lstr
+WITHSTR =str.cma
 
 WITHNUMS =nums.cma -cclib -lnums
 
