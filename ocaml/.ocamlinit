@@ -13,3 +13,4 @@
 #load "error.cmo";;  
 #load "poly.cmo";;
 #load "taylormodel.cmo";;
+#load "str.cma";;
