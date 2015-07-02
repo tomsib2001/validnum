@@ -22,7 +22,7 @@ let half = thin 0.5;;
 let i998 = const 998;;
 
 exception Reject of int;;
-exception NoResult;;
+exception NoResult of int;;
 exception Continue;;
 
 let t = Array.make 9 0;;
@@ -34,7 +34,7 @@ let reject c1 h0 i =
 
 let noresult i = 
   (* Printf.printf "reject at step %d\n" i; *)
-  nores.(i-1) <- nores.(i-1) + 1; raise NoResult;;
+  nores.(i-1) <- nores.(i-1) + 1; raise (NoResult i);;
 
 let print_step i = () ;;(* match i with *)
   (* | 1 -> psn "trying step 1.." *)
@@ -346,10 +346,10 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
   (* print_interval_bis f0; pn(); *)
   (* psn "t is"; *)
   (* print_interval_bis t; pn(); *)
-  psn "delta_i is";
-  print_interval_bis delta_i; pn();
-  psn "delta_0 is";
-  print_interval_bis delta_0; pn();
+  (* psn "delta_i is"; *)
+  (* print_interval_bis delta_i; pn(); *)
+  (* psn "delta_0 is"; *)
+  (* print_interval_bis delta_0; pn(); *)
   let delta_0 = 
     iPlus 
       delta_0 
@@ -360,6 +360,8 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
 
   print_step 9;
   let w_base = integralIntBounds (dvmin hi fi ymin) idepth z1 z3 in
+  (* psn "w_ends : "; *)
+  (* print_interval w_ends; pn(); *)
   (* psn "w_base : "; *)
   (* print_interval w_base; pn(); *)
   let w_i = iPlus w_ends w_base in
@@ -384,21 +386,21 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
 
 
 let rec divideAndCheckRectangle y1 h0 idepth fuel =
-  psn "entering divideAndCheckRectangle: ";
-  ps "y1 : ";
-  print_interval y1;
-  pn ();
-  ps "h0 : ";
-  print_interval h0;
-  pn();
+  (* psn "entering divideAndCheckRectangle: "; *)
+  (* ps "y1 : "; *)
+  (* print_interval y1; *)
+  (* pn (); *)
+  (* ps "h0 : "; *)
+  (* print_interval h0; *)
+  (* pn(); *)
   match fuel with
   | 0 -> failwith "reached max fuel. stopping"
   | k ->
     let c1 = iSqrt (iSub one (iSqr y1)) in
     (* psn "c1 : "; print_interval c1; pn(); *)
     (try check_rectangle c1 h0 idepth with
-    | Reject i -> Printf.printf "\n Reject %d \n" i; true
-    | NoResult ->
+    | Reject i -> (* Printf.printf "\n Reject %d \n" i; *) true
+    | NoResult i ->
       let (y1a,y1b) = split y1 in
       let (h0a,h0b) = split h0 in
       (divideAndCheckRectangle y1a h0a idepth (k-1))
@@ -432,38 +434,38 @@ let main idepth =
 
 main 5;;
 
-(* tests in Coq *)
-avgwt (1.,2.) (3.,10.) (1. /. 16.);;
-compare (1.,2.) (3.,10.) (0.,1.) (0.,10.);;
-compare (3.,10.) (1.,2.) (0.,1.) (0.,10.);;
-(* end of tests in Coq *)
+(* (\* tests in Coq *\) *)
+(* avgwt (1.,2.) (3.,10.) (1. /. 16.);; *)
+(* compare (1.,2.) (3.,10.) (0.,1.) (0.,10.);; *)
+(* compare (3.,10.) (1.,2.) (0.,1.) (0.,10.);; *)
+(* (\* end of tests in Coq *\) *)
 
-let foi = float_of_int in
-let tofloat f i = (f *. 2. ** (foi i)) in
+(* let foi = float_of_int in *)
+(* let tofloat f i = (f *. 2. ** (foi i)) in *)
 
-(* let idepth = 5 in *)
-(* let h0 = makeIntervalle (tofloat (foi 5) 0) (tofloat (foi 5125) (-10)) in *)
-(* let f0 = makeIntervalle (tofloat (foi 585799) (-18))  (tofloat (foi 587141) (-18)) in *)
-(* let ymax = makeIntervalle (tofloat (foi 940495) (-20)) (tofloat (foi 942512) (-20)) in *)
-(* let z4 = makeIntervalle (tofloat (foi (-973156)) (-21)) (tofloat (foi (-968799)) (-21)) in *)
-(* let z2 = makeIntervalle (tofloat (foi 736278) (-22)) (tofloat (foi 799067) (-22)) in *)
-(* let delta_0_coq = makeIntervalle (tofloat (foi 733725) (-21)) (tofloat (foi 825711) (-21)) in *)
-(* let delta_0 = integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2 in *)
-(* let delta_i_coq = makeIntervalle (tofloat (foi 970251) (-22))  (tofloat (foi 589506) (-21)) in *)
-(* print_interval delta_0; *)
+(* (\* let idepth = 5 in *\) *)
+(* (\* let h0 = makeIntervalle (tofloat (foi 5) 0) (tofloat (foi 5125) (-10)) in *\) *)
+(* (\* let f0 = makeIntervalle (tofloat (foi 585799) (-18))  (tofloat (foi 587141) (-18)) in *\) *)
+(* (\* let ymax = makeIntervalle (tofloat (foi 940495) (-20)) (tofloat (foi 942512) (-20)) in *\) *)
+(* (\* let z4 = makeIntervalle (tofloat (foi (-973156)) (-21)) (tofloat (foi (-968799)) (-21)) in *\) *)
+(* (\* let z2 = makeIntervalle (tofloat (foi 736278) (-22)) (tofloat (foi 799067) (-22)) in *\) *)
+(* (\* let delta_0_coq = makeIntervalle (tofloat (foi 733725) (-21)) (tofloat (foi 825711) (-21)) in *\) *)
+(* (\* let delta_0 = integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2 in *\) *)
+(* (\* let delta_i_coq = makeIntervalle (tofloat (foi 970251) (-22))  (tofloat (foi 589506) (-21)) in *\) *)
+(* (\* print_interval delta_0; *\) *)
+(* (\* pn(); *\) *)
+(* (\* print_interval delta_0_coq; *\) *)
+(* (\* pn(); *\) *)
+(* (\* print_interval delta_i_coq; *\) *)
+(* (\* pn();; *\) *)
+
+(* let y1 = makeIntervalle (tofloat (foi 681574398) (-30)) *)
+(*                  (tofloat (foi 682622977) (-30)) in *)
+
+(* let h0 = makeIntervalle (tofloat (foi 5) 0) (tofloat (foi 2565) (-9)) in *)
+(* let c1 = iSqrt (iSub one (iSqr y1)) in *)
+(* print_interval h0; *)
 (* pn(); *)
-(* print_interval delta_0_coq; *)
+(* print_interval c1; *)
 (* pn(); *)
-(* print_interval delta_i_coq; *)
-(* pn();; *)
-
-let y1 = makeIntervalle (tofloat (foi 681574398) (-30))
-                 (tofloat (foi 682622977) (-30)) in
-
-let h0 = makeIntervalle (tofloat (foi 5) 0) (tofloat (foi 2565) (-9)) in
-let c1 = iSqrt (iSub one (iSqr y1)) in
-print_interval h0;
-pn();
-print_interval c1;
-pn();
-check_rectangle c1 h0 5;
+(* check_rectangle c1 h0 5 *)
