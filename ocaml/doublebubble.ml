@@ -410,8 +410,8 @@ let rec divideAndCheckRectangle y1 h0 idepth fuel =
     | e -> raise e)
 
 let main idepth =
-  let y1 = (0.5,1.) in
-  let h0 = (5.,10.) in
+  let y1 = (0.,1.) in
+  let h0 = (0.03125,10.) in
   if
     divideAndCheckRectangle y1 h0 idepth 11
   then
