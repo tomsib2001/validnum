@@ -15,8 +15,8 @@ Variables (f : R -> R) (ra rb : R).
 Hypothesis ltab : ra < rb.
 Hypothesis fint : ex_RInt f ra rb.
 
-Lemma XRInt1_correct (i : interval) : 
-  (forall x, ra <= x <= rb -> contains i (Xreal (f x))) ->
+Lemma XRInt1_correct (i : interval) :
+  (forall x, ra < x < rb -> contains i (Xreal (f x))) ->
   contains i (Xreal ((RInt f ra rb) / (rb - ra))).
 Proof.
 move=> hif.
@@ -34,14 +34,14 @@ Section ExtensionOfFunctionsToXreal.
 
 Variable (f : R -> R).
 
-Definition toXreal_fun : ExtendedR -> ExtendedR := 
+Definition toXreal_fun : ExtendedR -> ExtendedR :=
   fun x => match x with Xnan => Xnan | Xreal r => Xreal (f r) end.
 
 (* Interval_xreal.extension should be boolean *)
 Lemma xreal_extension_toXreal_fun : Interval_xreal.extension f toXreal_fun.
 Proof. by case. Qed.
 
- 
+
 End ExtensionOfFunctionsToXreal.
 
 Section XReals.
@@ -54,6 +54,3 @@ Lemma le_upper_refl (r : R) : le_upper (Xreal r) (Xreal r).
 Proof. by rewrite /=; apply: Rle_refl. Qed.
 
 End XReals.
-
-
-

@@ -41,10 +41,10 @@ Variable prec : F.precision.
 Variables (f : R -> R) (iF : I.type -> I.type).
 
 (* This is a std monadic operation. Does it exist somewhere in the libs? *)
-Let g := toXreal_fun f. 
+Let g := toXreal_fun f.
 
 (* g is a restriction of f as an extendedR function. *)
-Let Hfgext := xreal_extension_toXreal_fun f. 
+Let Hfgext := xreal_extension_toXreal_fun f.
 
 (* iF is an interval extension of g *)
 (* Hypothesis HiFIntExt : I.extension g iF. *)
@@ -64,9 +64,9 @@ Hypothesis  Hleab : T.toR a <= T.toR b.
 Hypothesis ha : F.real a.
 Hypothesis hb : F.real b.
 
-(* we should better tune the order of the arguments of 
+(* we should better tune the order of the arguments of
   I.extension2. In the current state, at line (* 1 *)
-   we cannot apply I.sub_correct in the 
+   we cannot apply I.sub_correct in the
   present case because we need either a first conversion step to make Xsub
   explicit, or providing explicitely the arguments, which come after prec and
   interval arguments:  apply: (I.sub_correct _ _ _ (Xreal rb) (Xreal ra)) *)
@@ -93,19 +93,19 @@ case: (Rle_lt_or_eq_dec _ _ Hleab) => [Hleab1 | Heqab]; last first.
       apply: I.sub_correct; exact: thin_correct_toR.
       (* try and show l * (b - a) <= int <= u * (b - a) instead *)
     - apply: XRInt1_correct => // x hx; rewrite -elu -[Xreal _]/(g (Xreal x)).
-      apply: HiFIntExt; exact: contains_convert_bnd.
+      apply: HiFIntExt; apply: contains_convert_bnd=> //; case: hx; split; exact: Rlt_le.
 Qed.
 
 End OrderOne.
 
-Fixpoint integral (depth : nat) (a b : F.type) := 
+Fixpoint integral (depth : nat) (a b : F.type) :=
   let int := I.bnd a b in
   match depth with
     | O => I.mul prec (iF (int)) (I.sub prec (thin b) (thin a))
     | S n => let m := I.midpoint int in
              let i1 := integral n a m in
              let i2 := integral n m b in
-             I.add prec i1 i2 
+             I.add prec i1 i2
   end
 .
 
@@ -116,7 +116,7 @@ Fixpoint integral (depth : nat) (a b : F.type) :=
 Section integral.
 
 Lemma integral_correct (depth : nat) (a b : F.type) :
-  ex_RInt f (T.toR a) (T.toR b) -> 
+  ex_RInt f (T.toR a) (T.toR b) ->
   T.toR a <= T.toR b ->
   (F.real a) -> (F.real b) ->
   contains (I.convert (integral depth a b)) (Xreal (RInt f (T.toR a) (T.toR b))).
@@ -129,21 +129,21 @@ have hIl : ex_RInt f (T.toR a) (T.toR midpoint).
 have hIr : ex_RInt f (T.toR midpoint) (T.toR b).
   by apply:  (ex_RInt_Chasles_2 f (T.toR a))=> //; apply: midpoint_bnd_in.
 have -> : RInt f (T.toR a) (T.toR b) =
-  RInt f (T.toR a) (T.toR midpoint) + RInt f (T.toR midpoint) (T.toR b). 
+  RInt f (T.toR a) (T.toR midpoint) + RInt f (T.toR midpoint) (T.toR b).
   by rewrite RInt_Chasles.
 set I1 := RInt _ _ _; set I2 := RInt _ _ _.
-rewrite /integral -/integral -[Xreal (_ + _)]/(Xadd (Xreal I1) (Xreal I2)). 
+rewrite /integral -/integral -[Xreal (_ + _)]/(Xadd (Xreal I1) (Xreal I2)).
 have [in1 in2] := midpoint_bnd_in ha hb Hleab.
 suff hm : F.real (I.midpoint (I.bnd a b)) by apply: I.add_correct; apply: Hk.
-  suff /I.midpoint_correct []: 
+  suff /I.midpoint_correct []:
     exists x : ExtendedR, contains (I.convert (I.bnd a b)) x by move/F_realP.
   exists (I.convert_bound a); apply: contains_convert_bnd_l => //; exact/F_realP.
 Qed.
 
 Lemma integral_correct_bis (depth : nat) (a b : F.type) (i : I.type) :
-  ex_RInt f (T.toR a) (T.toR b) -> 
+  ex_RInt f (T.toR a) (T.toR b) ->
   match (F.cmp a b) with | Xlt => true | Xeq => true | _ => false end = true ->
-  I.subset (integral depth a b) i = true -> 
+  I.subset (integral depth a b) i = true ->
   contains (I.convert i) (Xreal (RInt f (T.toR a) (T.toR b))).
 Proof.
 intros Hint Hcmp Hsub.
@@ -208,28 +208,28 @@ End IntervalIntegral.
 
 
 (* this lemma is intended for the tactic, so that it allows for an easy proof of  *)
-Lemma integral_correct_ter prec (depth : nat) (a b : F.type) 
+Lemma integral_correct_ter prec (depth : nat) (a b : F.type)
       (i : I.type) formula bounds :
-  ex_RInt 
-    (fun x => nth 0 (eval_real formula (x::map IntA.real_from_bp bounds)) R0) 
-    (T.toR a) 
-    (T.toR b) -> 
-  match (F.cmp a b) with 
-    | Xlt => true 
-    | Xeq => true 
+  ex_RInt
+    (fun x => nth 0 (eval_real formula (x::map IntA.real_from_bp bounds)) R0)
+    (T.toR a)
+    (T.toR b) ->
+  match (F.cmp a b) with
+    | Xlt => true
+    | Xeq => true
     | _ => false end = true ->
-  I.subset 
-    (integral 
-       prec 
-       (fun xi => nth 0 (IntA.BndValuator.eval prec formula (xi::map IntA.interval_from_bp bounds)) I.nai) 
-       depth a b) i = true -> 
-  contains 
-    (I.convert i) 
-    (Xreal 
-       (RInt 
-          (fun x => 
-             nth 0 (eval_real formula (x::map IntA.real_from_bp bounds)) R0) 
-          (T.toR a) 
+  I.subset
+    (integral
+       prec
+       (fun xi => nth 0 (IntA.BndValuator.eval prec formula (xi::map IntA.interval_from_bp bounds)) I.nai)
+       depth a b) i = true ->
+  contains
+    (I.convert i)
+    (Xreal
+       (RInt
+          (fun x =>
+             nth 0 (eval_real formula (x::map IntA.real_from_bp bounds)) R0)
+          (T.toR a)
           (T.toR b))).
 Proof.
 apply: integral_correct_bis.
@@ -282,14 +282,14 @@ Import TestIntegral.
 Ltac interval_inclusion_by_computation :=
   vm_compute; split; rewrite -/(Rle _ _); fourier.
 
-Ltac proves_interval_extention := idtac. 
+Ltac proves_interval_extention := idtac.
 
 Ltac proves_RInt := idtac.
 
 (* this one should be an application of an implication which reduces the problem
     to computation. *)
 Ltac proves_bound_order := rewrite /T.toR /=; fourier.
- 
+
 Ltac apply_interval_correct :=
 (* // kills the subgoals F.real b with b a bound of the integral. *)
 (* these are obtained by Private.get_float in thebody of intergal_tac,
@@ -461,7 +461,7 @@ Ltac get_bounds l :=
 
 Ltac integral_tac_test g prec depth :=
 match goal with
-| |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
+| |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c =>
   let v := Private.get_float a in
   let w := Private.get_float c in
   let lb := Private.get_float ra in
@@ -480,53 +480,53 @@ Ltac integral_tac prec depth :=
       let lb := Private.get_float ra in
       let ub := Private.get_float rb in
       let f' := (eval cbv beta in (f reify_var))
-      in 
+      in
       match Private.extract_algorithm f' (reify_var::List.nil) with
-        | (?formul,_::?const) => 
+        | (?formul,_::?const) =>
           let formula := fresh "formula" in
           pose (formula := formul);
             let bounds := fresh "bounds" in
-            let toto1 := get_bounds const in 
+            let toto1 := get_bounds const in
             pose (bounds := toto1);
               apply (integral_correct_ter prec depth lb ub (I.bnd v w) formula bounds) end
 
-    | |- Rle (RInt ?f ?ra ?rb) ?c => 
+    | |- Rle (RInt ?f ?ra ?rb) ?c =>
       let v := F.nan in
       let w := Private.get_float c in
       let lb := Private.get_float ra in
       let ub := Private.get_float rb in
       let f' := (eval cbv beta in (f reify_var))
-      in 
+      in
       match Private.extract_algorithm f' (reify_var::List.nil) with
-        | (?formul,_::?const) => 
+        | (?formul,_::?const) =>
           let formula := fresh "formula" in
           pose (formula := formul);
             let bounds := fresh "bounds" in
-            let toto1 := get_bounds const in 
+            let toto1 := get_bounds const in
             pose (bounds := toto1);
               apply (integral_correct_ter prec depth lb ub (I.bnd v w) formula bounds) end
 
-    | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c => 
+    | |- Rle ?a (RInt ?f ?ra ?rb) /\ Rle (RInt ?f ?ra ?rb) ?c =>
       let v := Private.get_float a in
       let w := Private.get_float c in
       let lb := Private.get_float ra in
       let ub := Private.get_float rb in
       let f' := (eval cbv beta in (f reify_var))
-      in 
+      in
       match Private.extract_algorithm f' (reify_var::List.nil) with
-        | (?formul,_::?const) => 
+        | (?formul,_::?const) =>
           let formula := fresh "formula" in
           pose (formula := formul);
             let bounds := fresh "bounds" in
-            let toto1 := get_bounds const in 
+            let toto1 := get_bounds const in
             pose (bounds := toto1);
                           apply (integral_correct_ter prec depth lb ub (I.bnd v w) formula bounds) end
-           
+
   end; [rewrite /=; idtac | abstract (vm_cast_no_check (eq_refl true)) | abstract (vm_cast_no_check (eq_refl true)) ].
  (* at this point we generate two subgoals: *)
  (*- the first one succeeds by computation if the interval computed by integral *)
  (*     is sharp enough wrt to the user's problem *)
- (*   - the second one is always provable by application of interval_correct *) 
+ (*   - the second one is always provable by application of interval_correct *)
  (* [interval_inclusion_by_computation | apply_interval_correct] *)
  (* | _ => fail 100 "rate" end. *)
 
@@ -547,14 +547,14 @@ Definition prec30 := (30%bigZ) : F.precision.
 Lemma test  :
 (0<= RInt (fun x => (x )*(cos (x + 1))) 0 1<=2).
 Proof.
-integral_tac prec30 (11%nat).
+(* integral_tac prec30 (11%nat) *)
 admit.
 Qed.
 
 Ltac toto := (let w := Private.get_float 1%R in (fail "coucou" w)).
 
 Goal True.
-toto.
+(* toto. *)
 
 (* For tests and benchmarks *)
 (* Print 3. *)
@@ -665,7 +665,7 @@ Definition f (x : R) := Rtrigo_def.exp (Rtrigo_def.cos x).
 Definition g (x : I.type) := FInt.exp prec10 (FInt.cos prec10 x).
 
 Ltac extension_tac t := match t with
- | (fun (x : I.type) => exp prec10 (cos prec10 x)) => idtac 
+ | (fun (x : I.type) => exp prec10 (cos prec10 x)) => idtac
  (* | FInt.exp _ ?e => idtac (* apply: exp_correct *)(* ; extension_tac e  *) *)
 end.
 
@@ -721,12 +721,12 @@ pose g (x : I.type) := FInt.exp prec10 x.
 pose prec : F.precision := prec10.
 pose depth : nat := 1%nat.
 rewrite /f.
-integral_tac prec depth.
+(* integral_tac prec depth. *)
 admit.
 Qed.
 
 
- 
+
 (* Lemma test4 (f := fun x : R => x * x * Rtrigo_def.exp ( - (x / 2)) * Rtrigo_def.log x) : (0 <= RInt f 0 1 <= 23/8)%R. *)
 
 (* Definition foo f n a b :=  *)
@@ -742,14 +742,13 @@ Qed.
 
 
 (* Guillaume says that operations on F.type like (F.cmp a b = Xlt)
-  should not occur in hypotheses or proofs, unless we prove a spec on 
-  a functions (like below in the conclusion. We should specify these 
-  properties wrt to their behaviour in ExtendedR: 
+  should not occur in hypotheses or proofs, unless we prove a spec on
+  a functions (like below in the conclusion. We should specify these
+  properties wrt to their behaviour in ExtendedR:
  (F.cmp a b = Xlt) is replaced by (T.toR a <= T.toR b).
-  Warning, as we saw in the def of thin, we should exclude the possibility 
+  Warning, as we saw in the def of thin, we should exclude the possibility
   of a I.nai value, hence the extra hypotheses that I.convert gives a 'real
   real'. Note,  (I.convert_bound a) = Xreal (T.toR a) is the most convenient
   phrasing since it allows for rewriting in later steps of the proofs. *)
 
 (* Why the name xreal_ssr_compat.Xmul_Xreal ? *)
-
