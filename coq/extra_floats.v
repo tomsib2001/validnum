@@ -33,7 +33,7 @@ Qed.
 Lemma contains_convert_bnd_l (a b : F.type) :  (F.real a) -> (F.real b) -> 
   (T.toR a) <= (T.toR b) -> contains (I.convert (I.bnd a b)) (I.convert_bound a).
 Proof.
-case/F_realP => hra /F_realP [hrb] hleab; rewrite hra; apply: le_contains.
+move/F_realP => hra /F_realP hrb hleab; rewrite hra; apply: le_contains.
   by rewrite hra; apply: le_lower_refl.
 by rewrite hrb.
 Qed.
@@ -41,7 +41,7 @@ Qed.
 Lemma contains_convert_bnd_r (a b : F.type) :  (F.real a) -> (F.real b) -> 
   (T.toR a) <= (T.toR b) -> contains (I.convert (I.bnd a b)) (I.convert_bound b).
 Proof.
-case/F_realP => hra /F_realP [hrb] hleab; rewrite hrb; apply: le_contains.
+move/F_realP => hra /F_realP hrb hleab; rewrite hrb; apply: le_contains.
   rewrite hra /le_lower /=; exact: Ropp_le_contravar.
 rewrite hrb; exact: le_upper_refl.
 Qed.
@@ -49,7 +49,7 @@ Qed.
 Lemma contains_convert_bnd (a b : F.type) r :  (F.real a) -> (F.real b) -> 
   (T.toR a) <= r <= (T.toR b) -> contains (I.convert (I.bnd a b)) (Xreal r).
 Proof.
-case/F_realP => hra /F_realP [hrb] hleab; apply: le_contains.
+move/F_realP => hra /F_realP hrb hleab; apply: le_contains.
   by rewrite hra /le_lower /=; apply: Ropp_le_contravar; case: hleab.
 by rewrite hrb /le_lower /=; case: hleab.
 Qed.
