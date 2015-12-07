@@ -69,7 +69,7 @@
 #
 # The Caml sources (including camlyacc and camllex source files)
 
-SOURCES = error.ml quasiring.ml printing.ml int.ml basicdefs.ml poly.ml reification.ml integrals.ml diffeq.ml  bisection.ml taylor.ml newton.ml examples.ml benchmarks.ml taylormodel.ml doublebubble.ml
+SOURCES = error.ml quasiring.ml printing.ml int.ml basicdefs.ml poly.ml reification.ml integrals.ml diffeq.ml  bisection.ml taylor.ml newton.ml examples.ml benchmarks.ml taylormodel.ml doublebubble.ml parserCoqFloats.ml
 
 # The executable file to generate
 
@@ -81,7 +81,7 @@ EXEC = a.out
 # The Caml compilers.
 # You may fix here the path to access the Caml compiler on your machine
 # You may also have to add various -I options.
-CAMLC = ocamlc -g
+CAMLC = ocamlc
 CAMLOPT = ocamlopt
 CAMLDEP = ocamldep
 CAMLLEX = ocamllex
@@ -92,7 +92,7 @@ CAMLYACC = ocamlyacc
 # LIBS=$(WITHGRAPHICS) $(WITHUNIX) $(WITHSTR) $(WITHNUMS) $(WITHTHREADS)\
 # $(WITHDBM)
 
-# LIBS=$(WITHGRAPHICS)
+LIBS=$(WITHSTR)
 
 # Should be set to -custom if you use any of the libraries above
 # or if any C code have to be linked with your program
@@ -106,7 +106,7 @@ WITHGRAPHICS =graphics.cma -cclib -lgraphics -cclib -L/usr/X11R6/lib -cclib -lX1
 
 WITHUNIX =unix.cma -cclib -lunix
 
-WITHSTR =str.cma -cclib -lstr
+WITHSTR =str.cma
 
 WITHNUMS =nums.cma -cclib -lnums
 
@@ -122,7 +122,7 @@ WITHDBM =dbm.cma -cclib -lmldbm -cclib -lndbm
 ################ Nothing to set up or fix here
 ##############################################################
 
-all:: .depend.input .depend $(EXEC)
+all:: .depend.input .depend $(EXEC) $(EXEC).opt doubbub
 
 opt : .depend.input .depend $(EXEC).opt
 
@@ -143,7 +143,7 @@ $(EXEC): $(OBJS)
 	$(CAMLC) $(CUSTOM) -o $(EXEC) $(LIBS) $(OBJS)
 
 $(EXEC).opt: $(OPTOBJS)
-	$(CAMLOPT) -o $(EXEC) $(LIBS:.cma=.cmxa) $(OPTOBJS)
+	$(CAMLOPT) -o $(EXEC).opt $(LIBS:.cma=.cmxa) $(OPTOBJS)
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .mly 
 
@@ -204,3 +204,6 @@ depend: .depend
 	$(CAMLDEP) $(SMLIY) $(SMLIY:.ml=.mli) > .depend
 
 include .depend
+
+doubbub: doubbub.cpp
+	g++ -Wall -frounding-math -O3 -m32 -mfpmath=387 -mno-sse -mno-sse2 doubbub.cpp -o doubbub

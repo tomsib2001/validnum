@@ -12,6 +12,10 @@ let makeIntervalle (f1 : float) (f2 : float) = ((f1,f2) : intervalle);;
 let print_interval (a,b) =
   print_string "(" ; print_float a; print_string ","; print_float b; print_string ")";;
 
+let print_interval_bis (a,b) =
+  Printf.printf "(%.7f,%.7f)" (a +. 0.) b;;
+
+
 let minf = neg_infinity
 let pinf = infinity
 
@@ -66,6 +70,7 @@ let foi = float_of_int
 let sof = string_of_float
 
 let interval_to_string (x,y) = "("^(sof x)^","^(sof y)^")";;
+let interval_to_coq (x,y) = "("^(sof x)^","^(sof y)^")";;
 
 let contientZero (a,b) =
   ((a <= 0.) && (0. <= b)) || ((b < a) && (0. <= b || 0.>= a));;
@@ -94,9 +99,9 @@ let epsilon = epsilon_float
 let eta = min_float
 
 (* Round down *)
-let rd x = x;; (* if x < 0. then (x *. (1. +. epsilon) -. eta) else (x *. (1. -. epsilon) -. eta);; *)
+let rd x = if x < 0. then (x *. (1. +. epsilon) -. eta) else (x *. (1. -. epsilon) -. eta);;
 (* Round up *)
-let ru x = x;; (* if x <= 0. then (x *. (1. -. epsilon) +. eta) else (x *. (1. +. epsilon) +. eta);; *)
+let ru x = if x <= 0. then (x *. (1. -. epsilon) +. eta) else (x *. (1. +. epsilon) +. eta);;
 
 (* basic operations on intervals *)
 
@@ -147,43 +152,65 @@ let make_interval x y = (x,y);;
 
 let inv x = 1. /. x;;
 
+(* literal copy of the code from doubbup.cpp to track errors *)
+let divide x y =
+  assert(bot y > 0.);
+  let rbot = rd((bot x) /. (if (bot x) >= 0. then top y else bot y)) in
+  let rtop = ru((top x) /. (if top x >= 0. then bot y else top y)) in
+  make_interval rbot rtop;;
+
+let iDiv x y =
+  if bot y > 0. then divide x y 
+  else
+    if top y < 0. then divide (iNeg x) (iNeg y)
+    else
+      make_interval neg_infinity infinity;;
+
+(* end of literal copy of the code from doubbup.cpp to track errors *)
+
 let iDiv (a,b) (c,d) =
   match (contientZero (c,d)) with
-    | false -> iMult (a,b) (make_interval (rd (inv d)) (ru (inv c)))
-    | true -> 
-      (
-	match (contientZero (a,b)) with
-	  | true -> (minf,pinf)
-	  | false -> if (c,d) = (0.,0.) then make_interval pinf minf (* l'ensemble vide *) else 
-	      (
-		match (0.0 <= b) with (* abar < 0 *)
-		| false -> (* abar < 0 *)
-		  if d = (0.) then
-		    make_interval (b /. c) pinf
-		  else 
-		    if (c < 0.)&&(0. < d) then
-		      make_interval (b /. c) (b /. d)
-		    else
-		      if c = 0. then
-			make_interval minf (b /. d)
-		      else
-			failwith "n'arrive jamais" (* car 0 est dans l'intervalle [c,d] *)
-		| true -> (* abar >= 0 *) if a = 0. then
-		    failwith "n'arrive jamais" (*car ce cas a déjà été traité, 0 dans les deux intervalles *)
-		  else
-		    if d = 0. then
-		      make_interval (minf) (a /. c)
-		    else
-		      if (c < 0.0)&&(0.0 < d) then (* c < 0 < d *)
-			make_interval (a /. d) (a /. c)
-		      else 
-			if c = 0. then
-			  make_interval (a /. d) pinf
-			else
-			  failwith "n'arrive jamais"
-	    )
-      )
-    ;;
+    | false -> iMult (a,b) (make_interval ((inv d)) ((inv c)))
+    | true -> makeIntervalle minf pinf;;
+
+(* below is W.Tucker's iDiv *)
+(* let iDiv (a,b) (c,d) = *)
+(*   match (contientZero (c,d)) with *)
+(*     | false -> iMult (a,b) (make_interval (rd (inv d)) (ru (inv c))) *)
+(*     | true ->  *)
+(*       ( *)
+(* 	match (contientZero (a,b)) with *)
+(* 	  | true -> (minf,pinf) *)
+(* 	  | false -> if (c,d) = (0.,0.) then make_interval pinf minf (\* l'ensemble vide *\) else  *)
+(* 	      ( *)
+(* 		match (0.0 <= b) with (\* abar < 0 *\) *)
+(* 		| false -> (\* abar < 0 *\) *)
+(* 		  if d = (0.) then *)
+(* 		    make_interval (b /. c) pinf *)
+(* 		  else  *)
+(* 		    if (c < 0.)&&(0. < d) then *)
+(* 		      make_interval (b /. c) (b /. d) *)
+(* 		    else *)
+(* 		      if c = 0. then *)
+(* 			make_interval minf (b /. d) *)
+(* 		      else *)
+(* 			failwith "n'arrive jamais" (\* car 0 est dans l'intervalle [c,d] *\) *)
+(* 		| true -> (\* abar >= 0 *\) if a = 0. then *)
+(* 		    failwith "n'arrive jamais" (\*car ce cas a déjà été traité, 0 dans les deux intervalles *\) *)
+(* 		  else *)
+(* 		    if d = 0. then *)
+(* 		      make_interval (minf) (a /. c) *)
+(* 		    else *)
+(* 		      if (c < 0.0)&&(0.0 < d) then (\* c < 0 < d *\) *)
+(* 			make_interval (a /. d) (a /. c) *)
+(* 		      else  *)
+(* 			if c = 0. then *)
+(* 			  make_interval (a /. d) pinf *)
+(* 			else *)
+(* 			  failwith "n'arrive jamais" *)
+(* 	    ) *)
+(*       ) *)
+(*     ;; *)
 
 
 (* now we can say what it means for an interval to contain a float : *)

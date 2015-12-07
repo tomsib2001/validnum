@@ -4,6 +4,12 @@ open Reification;;
 open Taylor;; (* TODO: move subs from Taylor to reification *)
 open Integrals;;
 
+(* temporary *)
+(* let psn x = ();; *)
+(* let print_interval_bis x = ();; *)
+let print_string x = ();;
+(* end temporary *)
+
 let const (i : int) = thin(float_of_int i);;
 
 let i1000 = const 1000;;
@@ -15,14 +21,20 @@ let three = const 3;;
 let half = thin 0.5;;
 let i998 = const 998;;
 
-exception Reject;;
-exception NoResult;;
+exception Reject of int;;
+exception NoResult of int;;
 exception Continue;;
 
 let t = Array.make 9 0;;
+let nores = Array.make 9 0;;
 
-let reject i = t.(i-1) <- t.(i-1) + 1; raise Reject;;
-let noresult () = raise NoResult;;
+let reject c1 h0 i = 
+  (* Printf.printf "reject at step %d\n" i; *)
+  t.(i-1) <- t.(i-1) + 1; raise (Reject i);;
+
+let noresult i = 
+  (* Printf.printf "reject at step %d\n" i; *)
+  nores.(i-1) <- nores.(i-1) + 1; raise (NoResult i);;
 
 let print_step i = () ;;(* match i with *)
   (* | 1 -> psn "trying step 1.." *)
@@ -54,8 +66,8 @@ let (dx_sym : intervalle elemFun) =
   let t = Sub(Mult(Var "H",Pow(Var "Y",2)),Var "F") in
   Div(t,Sqrt(Mult(Plus(Mult(Const two,Var "Y"),t),Sub((Mult(Const two,Var "Y"),t)))));;
 
-psn "dx : ";;
-psn (elemFun_to_string interval_to_string dx_sym);;
+(* psn "dx : ";; *)
+(* psn (elemFun_to_coq interval_to_string dx_sym);; *)
 
 let dx (* y *) h f =
   let pre_dx = 
@@ -64,14 +76,14 @@ let dx (* y *) h f =
 
 let (dxmin_sym : intervalle elemFun) = 
   let y = Plus(Var "Y_min",Pow(Var "Z",2)) in
-  let t = Sub(Mult(Var "H",Pow(Var "Y",2)),Var "F") in
+  let t = Sub(Mult(Var "H",Pow(y,2)),Var "F") in
   Div(Mult(Const two,t),Sqrt(
     Mult
       (Plus(Mult(Const two,y),t),
        Sub(Sub(Const two,Mult(Var "H",Var "Y_min")),Mult(y,Var "H")))));;
 
-psn "dxmin : ";;
-psn (elemFun_to_string interval_to_string dxmin_sym);;
+(* psn "dxmin : ";; *)
+(* psn (elemFun_to_coq interval_to_string dxmin_sym);; *)
 
 let dxmin (* z *) h f ymin =   
   let pre_dxmin = 
@@ -104,8 +116,8 @@ let (dxmax_sym : intervalle elemFun) =
   )
   );;
 
-psn "dxmax : ";;
-psn (elemFun_to_string interval_to_string dxmax_sym);;
+(* psn "dxmax : ";; *)
+(* psn (elemFun_to_coq interval_to_string dxmax_sym);; *)
 
 let dxmax (* z *) h f ymax =   
   let pre_dxmax = 
@@ -114,8 +126,8 @@ let dxmax (* z *) h f ymax =
 
 let dv_sym = Mult(Pow(Var "Y",2),dx_sym);;
 
-psn "dv : ";;
-psn (elemFun_to_string interval_to_string dv_sym);;
+(* psn "dv : ";; *)
+(* psn (elemFun_to_coq interval_to_string dv_sym);; *)
 
 let dv (* y *) h f = 
   let pre_dv = 
@@ -136,8 +148,8 @@ let dvmin_sym =
     dxmin_sym
   );;
 
-psn "dvmin : ";;
-psn (elemFun_to_string interval_to_string dvmin_sym);;
+(* psn "dvmin : ";; *)
+(* psn (elemFun_to_coq interval_to_string dvmin_sym);; *)
 
 let dvmin (* z *) h f ymin = 
   let pre_dvmin = 
@@ -158,22 +170,34 @@ let dvmax_sym =
     dxmax_sym
   );;
 
-psn "dvmax : ";;
-psn (elemFun_to_string interval_to_string dvmax_sym);;
+(* psn "dvmax : ";; *)
+(* psn (elemFun_to_coq interval_to_string dvmax_sym);; *)
 
 let dvmax (* z *) h f ymax = 
   let pre_dvmax = 
     List.fold_right (fun (x,y) z -> subs (Var x) (Const y) z) ["H",h;"F",f;"Y_max",ymax] dvmax_sym in
   sym2iFunGen (fun x -> x) pre_dvmax;;
 
+let integralIntBounds dx idepth t y2 =
+  let r = integralIntBounds dx idepth t y2 in
+  (* print_interval_bis t; print_string " "; *)
+  (* print_interval_bis y2; print_string " -> "; *)
+  (* print_interval_bis r; pn (); *)
+  r
 
 let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth = 
+  (* print_interval_bis c1; pn (); *)
+  (* print_interval_bis h0; pn (); *)
   (* step 1 *)
 
   print_step 1;
   if (iGeq (iMult i1000 c1) i996) && (iLeq (iMult five h0) (one)) then
-    reject 1;
-  
+    begin
+      (* psn "reject at step 1"; *)
+      (* print_interval_bis c1; pn (); *)
+      (* print_interval_bis h0; pn(); *)
+      reject c1 h0 1;
+    end;
   (* step 2 *)
   
   print_step 2;
@@ -200,7 +224,16 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
       (iSub one (iSqr c1))
   in 
   (* print_interval (iPlus (iPow c2 2) t); pn(); *)
-  if iNeq (iPlus (iPow c2 2) t) one then reject 2;
+  (* psn "value of t:"; *)
+  (* print_interval_bis t; pn (); *)
+  (* psn "at step 2 on c1,h0 : "; *)
+  (* print_interval_bis c1; pn (); *)
+  (* print_interval_bis h0; pn(); *)
+  if iNeq (iPlus (iPow c2 2) t) one then
+    begin
+      (* psn "rejected"; *)
+      reject c1 h0 2;
+    end;
 
 (* step 3 *)
 
@@ -210,7 +243,7 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
     (iDiv
        (iSub (iMult (iSub hi one) (y2)) (iDiv fi y2))
        (iSqrt three)) in
-  if is_empty c2 then reject 3;
+  if is_empty c2 then reject c1 h0 3;
 
 (* step 4 *)
 
@@ -220,12 +253,12 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
        one
        (iMult (iSqrt three) (iDiv c1 y1))
     )
-  then reject 4;
+  then reject c1 h0 4;
 
 (* step 5 *)
 
   print_step 5;
-  if diam c2 > 0.5 then noresult ();
+  if diam c2 > 0.5 then noresult 5;
 
 (* step 6 *)
 
@@ -242,34 +275,37 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
       (iMult 
 	 (iPow (iSub one c2) 2)
 	 (iDiv
-	    (iPlus two c1)
+	    (iPlus two c2)
 	    (three)
 	 )
       ) in
+  (* psn "w_ends is"; *)
+  (* print_interval_bis w_ends; pn(); *)
   let ymin = iDiv (iNeg fi) (iPlus one (iSqrt (iPlus one (iMult fi hi)))) in 
   let ymax = iDiv (iPlus one (iSqrt (iPlus one (iMult f0 h0)))) (h0) in
   let y = compare c1 (iDiv (iSqrt three) two) ymin y1 in
   if iLt (iMult y hi) (iNeg one) then
-    (let r = iDiv one (iSub (iNeg hi) (iDiv one y)) in
+    (* (let r = iDiv one (iSub (iNeg hi) (iDiv one y)) in *)
+    (let r = iDiv (iDiv (iSqrt (three)) (two)) (iSub (iNeg hi) (iDiv one y)) in
      let w = iMult 
        (thin 2.5) 
        (iMult 
-	  (iPlus y (iDiv (iSqrt (three)) (two)))
+	  (iPlus y (iMult r (iDiv (iSqrt (three)) (two))))
 	  (iSqr r)
        ) in
-     if iLt w w_ends then reject 6);
+     if iLt w w_ends then reject c1 h0 6);
 
 (* step 7 *)
 
   print_step 7;
   let yleft = iSqrt (iDiv f0 h0) in
-  let yleft = if (iLt ymin y2) && (iLt yleft ymax) then iMax y1 yleft else noresult() in
-  let y4 = thin (avgwt yleft ymax 0.5) in
+  let yleft = if (iLt ymin y2) && (iLt yleft ymax) then iMax y1 yleft else noresult 7 in
+  let y4 = thin (avgwt yleft ymax (1. /. 16.)) in
   let z2 = iSqrt(iSub ymax y2) in
   let z4 = iNeg (iSqrt(iSub ymax y4)) in
   if iGeq (iMult i1000 c1) (i998) then
     begin
-      let t = (avgwt y1 y2 (1. /. 16.)) in
+      let t = (avgwt y1 y2 (1. /. 2.)) in
       let delta_i = 
 	iPlus
 	  (iMult 
@@ -282,14 +318,14 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
 	iPlus 
 	  delta_0
 	  (integralIntBounds (dx h0 f0) idepth (thin t) y4) in
-      if iGt delta_0 delta_i then reject 7;
+      if iGt delta_0 delta_i then reject c1 h0 7;
       let delta_0 = 
 	iPlus
 	  delta_0
 	  (integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2)
       in
-      if iGt delta_0 delta_i then reject 7;
-      if contient c1 1. then noresult();
+      if iGt delta_0 delta_i then reject c1 h0 7;
+      if contient c1 1. then noresult 7;
     end;
 
 (* step 8 *)
@@ -302,18 +338,30 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
   let z1 = compare c1 (iDiv (iSqrt(three)) (two)) (iNeg t) t in
   let z3 = iSqrt(iSub y2 ymin) in
   let delta_i = integralIntBounds (dxmin hi fi ymin) idepth z1 z3 in
-  let delta_0 = integralIntBounds (dx h0 f0) idepth y1 y4 in
-  if iLt delta_i delta_0 then reject 8;
+  let delta_0 = integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2 in
+  if iLt delta_i delta_0 then reject c1 h0 8;
+  (* psn "h0 is"; *)
+  (* print_interval_bis h0; pn(); *)
+  (* psn "f0 is"; *)
+  (* print_interval_bis f0; pn(); *)
+  (* psn "t is"; *)
+  (* print_interval_bis t; pn(); *)
+  (* psn "delta_i is"; *)
+  (* print_interval_bis delta_i; pn(); *)
+  (* psn "delta_0 is"; *)
+  (* print_interval_bis delta_0; pn(); *)
   let delta_0 = 
     iPlus 
       delta_0 
-      (integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2) in
-  if iNeq delta_i delta_0 then reject 8;
+      (integralIntBounds (dx h0 f0) idepth y1 y4) in
+  if iNeq delta_i delta_0 then reject c1 h0 8;
 
 (* step 9 *)
 
   print_step 9;
   let w_base = integralIntBounds (dvmin hi fi ymin) idepth z1 z3 in
+  (* psn "w_ends : "; *)
+  (* print_interval w_ends; pn(); *)
   (* psn "w_base : "; *)
   (* print_interval w_base; pn(); *)
   let w_i = iPlus w_ends w_base in
@@ -325,16 +373,16 @@ let check_rectangle (c1 : intervalle) (h0 : intervalle) idepth =
   (* print_interval i2; pn(); *)
   let w_0 = 
     iPlus
-      (integralIntBounds (dv h0 f0) idepth y1 y4)
+      (i1)
       (iSub
-	 (integralIntBounds (dvmax h0 f0 ymax) idepth z4 z2)
+	 (i2)
 	 w_base
       ) in
-  (* psn "w_i : "; *)
-  (* print_interval w_i; pn(); *)
-  (* psn "w_0 : "; *)
-  (* print_interval w_0; pn(); *)
-  if iNeq w_i w_0 then reject 9 else noresult();;
+  (* psn "w_i is"; *)
+  (* print_interval_bis w_i; pn(); *)
+  (* psn "w_0 is"; *)
+  (* print_interval_bis w_0; pn(); *)
+  if iNeq w_i w_0 then reject c1 h0 9 else noresult 9;;
 
 
 let rec divideAndCheckRectangle y1 h0 idepth fuel =
@@ -351,8 +399,8 @@ let rec divideAndCheckRectangle y1 h0 idepth fuel =
     let c1 = iSqrt (iSub one (iSqr y1)) in
     (* psn "c1 : "; print_interval c1; pn(); *)
     (try check_rectangle c1 h0 idepth with
-    | Reject -> true
-    | NoResult ->
+    | Reject i -> (* Printf.printf "\n Reject %d \n" i; *) true
+    | NoResult i ->
       let (y1a,y1b) = split y1 in
       let (h0a,h0b) = split h0 in
       (divideAndCheckRectangle y1a h0a idepth (k-1))
@@ -363,9 +411,9 @@ let rec divideAndCheckRectangle y1 h0 idepth fuel =
 
 let main idepth =
   let y1 = (0.,1.) in
-  let h0 = (0.,10.) in
+  let h0 = (0.03125,10.) in
   if
-    divideAndCheckRectangle y1 h0 idepth 15
+    divideAndCheckRectangle y1 h0 idepth 11
   then
     let count = ref 0 in
     begin
@@ -374,10 +422,50 @@ let main idepth =
 	count := !count + t.(i-1);
       done;
       psn ("total number of rectangles with integrals at depth "^(soi idepth)^": "^(soi !count));
-      psn "all rejected"
-    end
+      psn "all rejected";
+      let count = ref 0 in
+	for i =1 to 9 do
+	  psn ((soi (nores.(i-1)))^" gave no result at step "^(soi i));
+	  count := !count + nores.(i-1);
+	done
+      end
   else
     psn "we have a problem here";;
 
 main 5;;
 
+(* (\* tests in Coq *\) *)
+(* avgwt (1.,2.) (3.,10.) (1. /. 16.);; *)
+(* compare (1.,2.) (3.,10.) (0.,1.) (0.,10.);; *)
+(* compare (3.,10.) (1.,2.) (0.,1.) (0.,10.);; *)
+(* (\* end of tests in Coq *\) *)
+
+(* let foi = float_of_int in *)
+(* let tofloat f i = (f *. 2. ** (foi i)) in *)
+
+(* (\* let idepth = 5 in *\) *)
+(* (\* let h0 = makeIntervalle (tofloat (foi 5) 0) (tofloat (foi 5125) (-10)) in *\) *)
+(* (\* let f0 = makeIntervalle (tofloat (foi 585799) (-18))  (tofloat (foi 587141) (-18)) in *\) *)
+(* (\* let ymax = makeIntervalle (tofloat (foi 940495) (-20)) (tofloat (foi 942512) (-20)) in *\) *)
+(* (\* let z4 = makeIntervalle (tofloat (foi (-973156)) (-21)) (tofloat (foi (-968799)) (-21)) in *\) *)
+(* (\* let z2 = makeIntervalle (tofloat (foi 736278) (-22)) (tofloat (foi 799067) (-22)) in *\) *)
+(* (\* let delta_0_coq = makeIntervalle (tofloat (foi 733725) (-21)) (tofloat (foi 825711) (-21)) in *\) *)
+(* (\* let delta_0 = integralIntBounds (dxmax h0 f0 ymax) idepth z4 z2 in *\) *)
+(* (\* let delta_i_coq = makeIntervalle (tofloat (foi 970251) (-22))  (tofloat (foi 589506) (-21)) in *\) *)
+(* (\* print_interval delta_0; *\) *)
+(* (\* pn(); *\) *)
+(* (\* print_interval delta_0_coq; *\) *)
+(* (\* pn(); *\) *)
+(* (\* print_interval delta_i_coq; *\) *)
+(* (\* pn();; *\) *)
+
+(* let y1 = makeIntervalle (tofloat (foi 681574398) (-30)) *)
+(*                  (tofloat (foi 682622977) (-30)) in *)
+
+(* let h0 = makeIntervalle (tofloat (foi 5) 0) (tofloat (foi 2565) (-9)) in *)
+(* let c1 = iSqrt (iSub one (iSqr y1)) in *)
+(* print_interval h0; *)
+(* pn(); *)
+(* print_interval c1; *)
+(* pn(); *)
+(* check_rectangle c1 h0 5 *)
