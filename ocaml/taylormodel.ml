@@ -430,7 +430,7 @@ let rec solve_bisect ((i,x0,phi,sVars,initConds) : 'a diffeq) (y0 : solution) it
       psn " ---------------------    new call of solve_bisect";
       (tL,i,x0)::(solve_bisect (interv,new_x0,phi,sVars,new_initConds) new_y0 its n maxAttempts epsilon max_width);;
 
-let new_sinEq = ((0.,3.5),zero,sinField,["x0";"x1"],[(1. -. 0.125,1. +. 0.125);(0. -. 0.125,0. +. 0.125)] : 'a diffeq);;
+let new_sinEq = ((0.,0.5),zero,sinField,["x0";"x1"],[(1. -. 0.0125,1. +. 0.0125);(0. -. 0.0125,0. +. 0.0125)] : 'a diffeq);;
 let new_expEq = ((0.,3.),zero,expField,["x"],[one] : 'a diffeq);;
 
 let n = 30;;
@@ -439,7 +439,7 @@ let epsilon = 0.01;;
 let maxAttempts = 15;;
 let maxWidth = 0.002;;
 
-(* let t = solve_bisect new_sinEq [tm_const (~-.2.,2.) n;tm_const (~-.2.,2.) n] its n maxAttempts epsilon maxWidth;; *)
+let t = solve_bisect new_sinEq [tm_const (~-.2.,2.) n;tm_const (~-.2.,2.) n] its n maxAttempts epsilon maxWidth;;
 (* let t = solve_bisect new_expEq [tm_const (~-.1.,1.) n] its n 500 epsilon;; *)
 
 
@@ -489,4 +489,6 @@ let outputPlot epsilon oc (sol : (solution*intervalle*intervalle) list) =
   
 let f = open_out "plot.py";;
 
-(* outputPlot 0.01 f t;; *)
+outputPlot 0.01 f t;;
+
+close_out f;;
