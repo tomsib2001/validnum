@@ -1,11 +1,11 @@
-let makeExp one mul = 
+let makeExp one mul =
   let rec aux x n = match n with
     | 0 -> one
     | n when (n mod 2 = 0) -> let value = (aux x (n/2)) in mul value value
     | n (* n odd *) -> let value = (aux x (n/2)) in mul (mul value value) x
   in aux
 
-module type QUASIRING = 
+module type QUASIRING =
 sig
   type element
   val normal : element -> element
