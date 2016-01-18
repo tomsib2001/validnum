@@ -212,7 +212,7 @@ let tm_neg mf =
   let (p,err) = mf in
   (PolI.neg p,Basicdefs.iNeg err);;
 
-let get_tm (const : 'a -> intervalle) (models : (string*taylorModel) list) i x0 n f = 
+let get_tm (const : 'a -> intervalle) (soc : 'a -> string) (models : (string*taylorModel) list) i x0 n f = 
   let rec aux = function
   | Const (a : 'a) -> tm_const (const a) n
   | Var s -> (try
@@ -222,12 +222,12 @@ let get_tm (const : 'a -> intervalle) (models : (string*taylorModel) list) i x0 
   | Sub (f1,f2) -> aux (Plus(f1,Neg f2))
   | Pow(f,j) -> polynomialEvaluation (PolI.makePol (flatten [one,j])) (aux f) i x0 n
   | Neg(f) -> tm_neg (aux f)
-  | _ -> failwith "not implemented yet"
+  | _ as x -> failwith ("not implemented yet: "^(elemFun_to_string (fun t -> soc t)x))
   in aux f
 ;;
 
 
-let (p,e) = get_tm (fun x -> x) []  (0.,1.) zero 10 (Pow(Plus(Const one,Var "x"),5));;
+let (p,e) = get_tm (fun x -> x) interval_to_string []  (0.,1.) zero 10 (Pow(Plus(Const one,Var "x"),5));;
 PolI.polToFlatList p;;
 e;;
 
@@ -264,7 +264,7 @@ let expEq = ((0.,1.),zero,expField,["x"],[one] : 'a diffeq);;
 
 let applyField (yn : solution) (phi : intervalle vfield) (sVars : string list) i x0 n =
   let table = List.map2 (fun s m -> (s,m)) sVars yn in
-  let toIntegrate = List.map (get_tm (fun x -> x) table i x0 n) phi in
+  let toIntegrate = List.map (get_tm (fun x -> x) interval_to_string table i x0 n) phi in
   (* List.iter (fun x -> psn (taylorModelToString x); pn ()) toIntegrate; psn "breakpoint";pn(); *)
   toIntegrate;;
 
@@ -439,7 +439,7 @@ let epsilon = 0.01;;
 let maxAttempts = 15;;
 let maxWidth = 0.002;;
 
-let t = solve_bisect new_sinEq [tm_const (~-.2.,2.) n;tm_const (~-.2.,2.) n] its n maxAttempts epsilon maxWidth;;
+(* let t = solve_bisect new_sinEq [tm_const (~-.2.,2.) n;tm_const (~-.2.,2.) n] its n maxAttempts epsilon maxWidth;; *)
 (* let t = solve_bisect new_expEq [tm_const (~-.1.,1.) n] its n 500 epsilon;; *)
 
 
@@ -487,8 +487,8 @@ let outputPlot epsilon oc (sol : (solution*intervalle*intervalle) list) =
       output_string oc "]\n";
       output_string oc "plt.plot(points,imagesLow,'red')\nplt.plot(points,imagesUp,'green')\nplt.show()";;
   
-let f = open_out "plot.py";;
+(* let f = open_out "plot.py";; *)
 
-outputPlot 0.01 f t;;
+(* outputPlot 0.01 f t;; *)
 
-close_out f;;
+(* close_out f;; *)

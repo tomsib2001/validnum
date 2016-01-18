@@ -27,3 +27,4 @@ print_newline()
 if compute then List.iter (fun i -> print_string ("depth="^(soi i)^"\n") ; time (fun () -> (integralIntBounds iExp i (thin 0.) (thin 1.))) () 10; print_newline()) [3;6;10;11;12;13;14;15];;
 
 if compute then time (fun () -> (integralIntBounds (fun x -> iSin (iPlus x (iExp x))) 13  (thin 0.) (thin 8.))) () 2;;
+

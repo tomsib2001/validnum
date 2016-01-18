@@ -1,4 +1,6 @@
 open Basicdefs;;
+open Quasiring;;
+open Poly;;
 
 type 'a elemFun =
   | Const of 'a
@@ -112,3 +114,30 @@ let varFunAD f k (a,b) = raise Not_found;;
 
 (* symbolic functions to automatic differentiation of order 1 functions *)
 let sym2ad1= makeF constAD varAD plusAD multAD negAD subAD divAD sqrtAD cosAD sinAD expAD logAD powAD varFunAD;;
+
+(* declaration of symbolic functions as a quasiring *)
+
+module SymFunQuasiRing (R : QUASIRING) : QUASIRING with type element = R.element elemFun =
+struct
+  type element = R.element elemFun
+  let normal x = x
+  let zero = Const (R.zero)
+  let one = Const (R.one)
+  let eq x y = x = y
+  let eqZero x = (x = zero)
+  let eqOne x = (x = one)
+  let add x y = Plus(x,y)
+  let sub x y = Sub(x,y)
+  let neg x = Neg x
+  let mul x y = Mult(x,y)
+  let exp x y = Pow(x,y)
+  let div x y = Div(x,y)
+  let divides x y = not (eqZero y)
+  let intmul i x = Mult(Const (R.injection i),x)
+  let injection (i : int) = Const (R.injection i)
+  let floatInj i = Const (R.floatInj i)
+  let soe x = elemFun_to_string R.soe x
+end;;
+
+(* module SFQRI : QUASIRING = SymFunQuasiRing(IntervalQuasiRing);; *)
+module SymFunPoly=PolyOfQuasiRing(SymFunQuasiRing(IntervalQuasiRing));;

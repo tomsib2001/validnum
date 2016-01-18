@@ -40,7 +40,7 @@ iSin (3., 7.);;
 let sI x = iMult (iSin x) (iSub x (iCos x));;
 let s x = (sin x) *. (x -. (cos x));;
 
-if heavy then bisect 0.00000000000001 s sI 0. 10. else [];;
+(* if heavy then bisect 0.00000000000001 s sI 0. 10. else [];; *)
 
 (* examples for the Newton method *)
 let s x = iMult (iSin x) (iSub x (iCos x));; (* rappel *)
@@ -93,15 +93,15 @@ let gSym1 = Pow(Var "x",3);;
 let gDiff1 = sym2ad1 gSym1;;
 gDiff1 (9.,10.);;
 
-(* example of use of int_iFun *)
-diam (int_iFun iF 5 0. 0.001);;
+(* (\* example of use of int_iFun *\) *)
+(* diam (int_iFun iF 5 0. 0.001);; *)
 
-let fSym = Sin(Exp (Var "x"));;
-let iF = sym2iFunFloat fSym;;
-if heavy then int_iFun iF 22 0. 8. else thin pinf;;
+(* let fSym = Sin(Exp (Var "x"));; *)
+(* let iF = sym2iFunFloat fSym;; *)
+(* if heavy then int_iFun iF 22 0. 8. else thin pinf;; *)
 
 (* test of the integral with interval bounds *)
-if heavy then integralIntBounds iExp 15 (thin 0.) (thin 1.) else (thin pinf);;
+(* if heavy then integralIntBounds iExp 15 (thin 0.) (thin 1.) else (thin pinf);; *)
 
 
 
@@ -119,13 +119,13 @@ let makeIfunFromDiffEq2 steps intprec x0 y0 valinit f x1  =
   | [] -> failwith "Yet another empty list error"
   | h::t -> h x1;;
 
-let newICos = makeIfunFromDiffEq2 5 3 (thin 0.) [thin 1.;thin 0.] [(fun x -> (neg 1.,1.));(fun x -> (neg 1.,1.))] (fCos (fun f -> (fun x -> iNeg (f x))));;
+(* let newICos = makeIfunFromDiffEq2 5 3 (thin 0.) [thin 1.;thin 0.] [(fun x -> (neg 1.,1.));(fun x -> (neg 1.,1.))] (fCos (fun f -> (fun x -> iNeg (f x))));; *)
 
 (* à décommenter pour les tests
 On constate que sur le cosinus, cette méthode n'est pas géniale loin de 0
  *)
-newICos (0.01,1.5);;
-newICos (0.1,0.2);;
+(* newICos (0.01,1.5);; *)
+(* newICos (0.1,0.2);; *)
 iCos (0.1,0.2);;
 
 (* Exemple de W.T. 183,3 *)
@@ -138,24 +138,24 @@ let fEx1 l = match l with
 (* On prend les conditions initiales suivantes: y(0) = 0.
 On donne comme encadrement de départ de la fonction [-10.,10.]
  *)
-let fEx1eff = makeIfunFromDiffEq2 4 2 (thin 0.) [thin 0.] [fun x -> (neg 1.,1.)] fEx1;;
+(* let fEx1eff = makeIfunFromDiffEq2 4 2 (thin 0.) [thin 0.] [fun x -> (neg 1.,1.)] fEx1;; *)
 
-fEx1eff (0.,0.001);;
+(* fEx1eff (0.,0.001);; *)
 
 (* Exemple de W.T. 186,5 *)
 (* x'(t) = -t * x(t) *)
 (* curieux, ça a l'air de ne pas marcher. Je ne vois pas spécialement pourquoi *)
 
-let fEx2 l = match l with
-  | [f] -> [fun (t:intervalle) -> (iMult (iNeg t) (f t))]
-  | _ -> failwith "Wrong size for Example 2";;
+(* let fEx2 l = match l with *)
+(*   | [f] -> [fun (t:intervalle) -> (iMult (iNeg t) (f t))] *)
+(*   | _ -> failwith "Wrong size for Example 2";; *)
 
-let fEx2eff = makeIfunFromDiffEq2 4 3 (thin 0.) [0.8,0.8] [fun x -> (0.,0.8)] fEx2;;
-let i = fEx2eff (0.,0.2);;
-let fEx2eff = makeIfunFromDiffEq2 4 3 (thin 0.2) [snd i,snd i] [fun x -> (0.,snd i)] fEx2;;
-let i = fEx2eff (0.,0.2);;
+(* let fEx2eff = makeIfunFromDiffEq2 4 3 (thin 0.) [0.8,0.8] [fun x -> (0.,0.8)] fEx2;; *)
+(* let i = fEx2eff (0.,0.2);; *)
+(* let fEx2eff = makeIfunFromDiffEq2 4 3 (thin 0.2) [snd i,snd i] [fun x -> (0.,snd i)] fEx2;; *)
+(* let i = fEx2eff (0.,0.2);; *)
 
-print_interval i;;
+(* print_interval i;; *)
 (* gros problème ici... *)
 
 
@@ -165,15 +165,15 @@ print_interval i;;
 
 
 (* test of simple enclosure methods *)
-let z0ExpConst = (0.,10.) (* approximation grossière de l'exponentielle sur [0,1] *)
-let phiExp t0 t1 z0 = z0;;
-let x1 = estimateWithConst 0. 0.1 phiExp (thin 1.) z0ExpConst;;
-let x2 = estimateWithConst 0. 0.1 phiExp (thin 1.) x1;;
-let x3 = estimateWithConst 0. 0.1 phiExp (thin 1.) x2;;
-let x3 = estimateWithConst 0. 0.1 phiExp (thin 1.) x3;;
-let x4 = estimateWithConst 0.1 0.2 phiExp (thin (fst x3)) z0ExpConst;;
-let x5 = estimateWithConst 0.1 0.2 phiExp (thin (fst x3)) x4;;
-let x6 = estimateWithConst 0.1 0.2 phiExp (thin (fst x3)) x5;;
+(* let z0ExpConst = (0.,10.) (\* approximation grossière de l'exponentielle sur [0,1] *\) *)
+(* let phiExp t0 t1 z0 = z0;; *)
+(* let x1 = estimateWithConst 0. 0.1 phiExp (thin 1.) z0ExpConst;; *)
+(* let x2 = estimateWithConst 0. 0.1 phiExp (thin 1.) x1;; *)
+(* let x3 = estimateWithConst 0. 0.1 phiExp (thin 1.) x2;; *)
+(* let x3 = estimateWithConst 0. 0.1 phiExp (thin 1.) x3;; *)
+(* let x4 = estimateWithConst 0.1 0.2 phiExp (thin (fst x3)) z0ExpConst;; *)
+(* let x5 = estimateWithConst 0.1 0.2 phiExp (thin (fst x3)) x4;; *)
+(* let x6 = estimateWithConst 0.1 0.2 phiExp (thin (fst x3)) x5;; *)
 
 
 (* test of makeInterval and clean *)
@@ -186,14 +186,33 @@ clean(l);;
 
 (* let l = (makeList 0. 1. 1);; *)
 
-estimateSolCut 0. 3 0 [1.] [1.] [fun x -> (0.,10.)] (fun x -> x) l;;
+(* estimateSolCut 0. 3 0 [1.] [1.] [fun x -> (0.,10.)] (fun x -> x) l;; *)
 
 (* examples from taylor.ml *)
 
-let t1 = getTaylorApproxSymbolic foi "x" 4 (Cos (Var "x")) (Var "x0") (Var "x");;
+(* let t1 = getTaylorApproxSymbolic foi "x" 4 (Cos (Var "x")) (Var "x0") (Var "x");; *)
 
-elemFun_to_string string_of_float t1;;
+(* elemFun_to_string string_of_float t1;; *)
 
-let t2 = getTaylorApproxSymbolic foi "x" 4 (Exp (Var "x")) (Var "x0") (Var "x");;
+(* let t2 = getTaylorApproxSymbolic foi "x" 4 (Exp (Var "x")) (Var "x0") (Var "x");; *)
 
-elemFun_to_string string_of_float t2;;
+(* elemFun_to_string string_of_float t2;; *)
+
+print_string "\nNow trying out our new integral function...\n"
+
+(* benchmarks for the integral with polynomials at leaves*)
+
+let fSym = (Plus(Var "x", Pow ((Var "x"),3)));;
+let iF = sym2iFunFloat fSym;; (* interval version *)
+let f = sym2floatFun fSym;; (* float version *)
+
+
+let n = 10;;
+let depth = 4;;
+
+let i1 = integralIntBounds_param (int_iFun_tm (string_of_float)) iF fSym n depth (thin 0.) (thin 1.);;
+
+let i2 = integralIntBounds iF depth (thin 0.) (thin 1.);;
+
+print_interval i1;;
+print_interval i2;;

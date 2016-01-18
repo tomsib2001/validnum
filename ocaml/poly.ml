@@ -101,9 +101,9 @@ struct
     |(p1,[]) -> []
     |((a,b)::t1,p2) -> add (shiftCons p2 b a) (mul t1 p2)
 
-  let primitive p = failwith "primitive not implemented yet"
+  let primitive (p : polynomial) = flatListToPol (R.zero :: (List.mapi (fun i x -> R.div (x) (R.injection (i+1))) (polToFlatList p)))
 
-  let eval p x = failwith "eval not implemented yet"
+  let eval p x = List.fold_right (fun (a,i) res -> R.add res (R.mul a (R.exp x i))) p R.zero;;
 
   let powerToString var n =
     if n = 0 then "1"
@@ -603,3 +603,4 @@ module PolyInt = PolyOfQuasiRing(IntRing);;
 module IntervalPoly = PolyOfQuasiRing(IntervalQuasiRing);;
 module IntervalFlatPoly = PolyFlatOfQuasiRing(IntervalQuasiRing);;
 module IntervalChebFlatPoly = ChebFlatPolyOfQuasiRing(IntervalQuasiRing);;
+
