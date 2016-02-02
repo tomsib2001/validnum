@@ -20,7 +20,15 @@ type 'a poly =
 | Pow of 'a poly * int
 | Square of 'a poly
 
-let eval (p : 'a poly) (eval_const : 'a -> intervalle ) (li : intervalle list) = 
+let polyToString (soc : 'a -> string) =
+  let rec aux res = function
+    | Const a -> res^(soc a)
+    | Var i -> res^"x_"^(string_of_int i)
+    | Add(p1,p2) -> aux ((aux res p1)^"+") p2
+
+type path = bool list
+
+let eval (p : 'a poly) (eval_const : 'a -> intervalle ) (li : intervalle list) =
   let rec aux = function
     | Const a -> eval_const a
     | Var i -> List.nth li i
@@ -35,7 +43,7 @@ let eval (p : 'a poly) (eval_const : 'a -> intervalle ) (li : intervalle list) =
 let build_subtrees t =
   let h = Hashtbl.create 100 in
   let hash path subtree = Hashtbl.add h (List.rev path) subtree in
-  let rec aux (cur_path : bool list) x = match x with
+  let rec aux (cur_path : path) x = match x with
     | Const a -> hash (cur_path) x
     | Var i -> hash (cur_path) x
     | Add(p1,p2) -> hash cur_path x; aux (true::cur_path) p1; aux (false::cur_path) p2
@@ -50,10 +58,10 @@ let get_list h = Hashtbl.fold (fun x y z -> (x,y)::z) h [];;
 
 let get_subtree path h = Hashtbl.find h path;;
 
-let subst path large newsubtree = 
+let subst path large newsubtree =
   let rec aux cur_tree cur_path = match (cur_tree,cur_path) with
     | (_,[]) -> newsubtree
-    | (t,true::l) -> 
+    | (t,true::l) ->
       (match t with
       | Add(p1,p2) -> Add(aux p1 l,p2)
       | Sub(p1,p2) -> Sub(aux p1 l,p2)
@@ -62,7 +70,7 @@ let subst path large newsubtree =
       | Pow(p,j) -> Pow(aux p l,j)
       | Square p -> Square (aux p l)
       | _ -> failwith "path should end here")
-    | (t,false::l) -> 
+    | (t,false::l) ->
       (match t with
       | Add(p1,p2) -> Add(p1,aux p2 l)
       | Sub(p1,p2) -> Sub(p1,aux p2 l)
@@ -75,42 +83,61 @@ let subst path large newsubtree =
 ;;
 
 (* sanity check *)
-let t = (Mul(Var 1,Add(Var 2, Const 3)));;
+let t = (Add(Mul(Var 1,Add(Var 2, Const 3)),Mul(Add(Var 0,Var 1),Var 2)));;
 let h = build_subtrees t;;
-get_list h;;
+let list_subtrees = get_list h;;
+let check_list = (List.map (fun (path,subtree) -> (subst path t subtree)) list_subtrees);;
+assert(List.for_all (fun x -> x=t) check_list);;
 let subtree = get_subtree [false;true] h;;
 subst [false; true] t (Var 17);;
 subst [false; false] t (Var 17);;
 (* end sanity check *)
 
-let pick_rand l = 
+let pick_rand l =
   let n = List.length l in
-  List.nth l (Random.int n);;
-  
-type path = bool list
+  let index = Random.int n in
+  List.nth l index;;
 
-type rule = AddA | AddC | OppD | MulA | MulC (* | MulNL | MulNR | R1 | R2 | R3 | R4 *);;
+type rule = AddA | AddC | OppD | MulA | MulC  | MulNL | MulNR | R1 | R2 | R3 | R4 ;;
 
-let list_rules = [AddA ; AddC ; OppD ; MulA ; MulC];;
+let list_rules = [AddA ; AddC ; OppD ; MulA ; MulC; MulNL ; MulNR; R1; R2; R3; R4];;
 
-let rules tree = 
-  let aux res rule = 
+let rules tree =
+  let aux res rule =
     match rule with
-    | AddA -> (match t with 
-      | Add(Add(x,y),z) -> (rule,Add(x,Add(y,z)))::res 
+    | AddA -> (match tree with
+      | Add(Add(x,y),z) -> (rule,Add(x,Add(y,z)))::res
       | _ -> res)
-    | AddC -> (match t with
+    | AddC -> (match tree with
       | Add(x,y) -> (rule,Add(y,x))::res
       | _ -> res)
-    | MulA -> (match t with 
+    | MulA -> (match tree with
       | Mul(Mul(x,y),z) -> (rule,Mul(x,Mul(y,z))) ::res
       | _ -> res)
-    | MulC -> (match t with
+    | MulC -> (match tree with
       | Mul(x,y) -> (rule,Mul(y,x))::res
       | _ -> res)
-    | OppD -> (match t with
+    | OppD -> (match tree with
       | Add(Opp x,Opp y) -> (rule,Opp(Add(x,y)))::res
-      | _ -> res) 
+      | _ -> res)
+    | MulNL -> (match tree with
+      | Mul(Opp x,y) -> (rule,Opp(Mul(x,y)))::res
+      | _ -> res)
+    | MulNR -> (match tree with
+      | Mul(x,Opp y) -> (rule,Opp(Mul(x,y)))::res
+      | _ -> res)
+    | R1 -> (match tree with
+      | Add(Mul(x,y),Mul(z,t)) when x = z -> (rule,Mul(x,Add(y,t)))::res
+      | _ -> res)
+    | R2 -> (match tree with
+      | Add(Mul(x,y),Mul(z,t)) when y=t -> (rule,Mul(Add(x,z),t))::res
+      | _ -> res)
+    | R3 -> (match tree with
+      | Add(Mul(x,y),Mul(t,z)) when x = z -> (rule,Mul(x,Add(y,t)))::res
+      | _ -> res)
+    | R4 -> (match tree with
+      | Add(Mul(x,y),Mul(z,t)) when y=z -> (rule,Mul(Add(x,t),y))::res
+      | _ -> res)
   in List.fold_right (fun x y -> (aux y x)) list_rules [];;
 
 t;;
@@ -122,14 +149,18 @@ let mutation t =
   let subtree = pick_rand l in
   let (path,subtree) = subtree in
   let candidateRules = rules subtree in
+  if candidateRules <> [] then
   let (rule,newSubTree) = pick_rand candidateRules in
   let newTree = subst path t newSubTree in
-  (rule,newSubTree,newTree);;
+  newTree else t;;
+  (* (rule,newSubTree,newTree);; *)
 (* rule *)
 
-t;;
+#trace Random.int;;
 
-mutation t;;
+(* t;; *)
+
+(* mutation t;; *)
 
 let newTrees = List.map mutation [t;t;t;t;t;t;t;t];;
 
