@@ -20,11 +20,23 @@ type 'a poly =
 | Pow of 'a poly * int
 | Square of 'a poly
 
-let polyToString (soc : 'a -> string) =
+let polyToString (soc : 'a -> string) p =
   let rec aux res = function
     | Const a -> res^(soc a)
-    | Var i -> res^"x_"^(string_of_int i)
-    | Add(p1,p2) -> aux ((aux res p1)^"+") p2
+    | Var i -> res^"x_{"^(string_of_int i)^"}"
+    | Add(p1,p2) -> (aux ((aux (res^"(") p1)^"+") p2)^")"
+    | Sub(p1,p2) -> (aux ((aux (res^"(") p1)^"-") p2)^")"
+    | Mul(p1,p2) -> aux ((aux res p1)^"*") p2
+    | Opp p -> aux (res^"-") p
+    | Pow(p,i) -> (aux res p)^(string_of_int i)
+    | Square(p) -> (aux res p)^(string_of_int 2)
+  in aux "" p;;
+
+let t = (Add(Mul(Var 1,Add(Var 2, Const 3)),Mul(Add(Var 0,Var 1),Var 2)));;
+polyToString (string_of_int) t;;
+let t1 = Sub(Mul(Var 0,Var 1),Mul(Var 0,Var 2));;
+print_string (polyToString (string_of_int) t1);;
+
 
 type path = bool list
 
@@ -84,6 +96,9 @@ let subst path large newsubtree =
 
 (* sanity check *)
 let t = (Add(Mul(Var 1,Add(Var 2, Const 3)),Mul(Add(Var 0,Var 1),Var 2)));;
+polyToString (string_of_int) t;;
+let t1 = Sub(Mul(Var 0,Var 1),Mul(Var 0,Var 2));;
+print_string (polyToString (string_of_int) t1);;
 let h = build_subtrees t;;
 let list_subtrees = get_list h;;
 let check_list = (List.map (fun (path,subtree) -> (subst path t subtree)) list_subtrees);;
@@ -155,8 +170,6 @@ let mutation t =
   newTree else t;;
   (* (rule,newSubTree,newTree);; *)
 (* rule *)
-
-#trace Random.int;;
 
 (* t;; *)
 
