@@ -1,0 +1,15 @@
+Sorry, I forgot, how to write a makefile. I suggest to run 
+
+coqc timing.v n2d6r1.v n2d6r4.v n3d6r1.v n3d6r4.v n4d4r1.v n4d4r3.v n6d2r1.v n6d2r2.v 
+
+Choose on of the examples ex = n2d...
+The following script creates the PQ expression.
+
+Require Import timing.
+Require Import ex.
+(* Define cert_pq *)
+Let cert_pq :=  Eval vm_compute in (Psatz_toPQ bnds0 hyps (eigs cert) (sos cert)).
+(* Define obj - cert *)
+Let cobj := PEsub obj cert_pq.
+
+
