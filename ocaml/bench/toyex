@@ -2,7 +2,11 @@ let box_toy1 = [:: [(-1#1),(1#1)], [(0#1),(1#1)], [(0#1),(1#1)]];;
 let pex_toy1 = PEadd (PEmul (PEx 1) (PEx 2)) (PEmul (PEx 1) (PEx 3));;
 
 let box_toy2 = [:: [(-1#1),(1#1)]];;
-let pex_toy2 = PEadd (PEsub (PEpow (PEx 1) 2) (PEmul ( PEc 2) (PEx 1))) (PEc 1);;
+let pex_toy2 = PEadd (PEsub (PEpow (PEx 1) 2) (PEmul ( PEc (2#1)) (PEx 1))) (PEc (1#1));;
+
+let box_toy3 = [:: [(-1#1),(1#1)]];;
+let pex_toy3 = PEsub (PEadd (PEsub (PEpow (PEx 1) 2) (PEmul ( PEc (2#1)) (PEx 1))) (PEc (1#1))) (PEsqr (PEsub (PEx 1) (PEc (1#1))));;
+
 
 
 
