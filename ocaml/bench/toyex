@@ -7,6 +7,8 @@ let pex_toy2 = PEadd (PEsub (PEpow (PEx 1) 2) (PEmul ( PEc (2#1)) (PEx 1))) (PEc
 let box_toy3 = [:: [(-1#1),(1#1)]];;
 let pex_toy3 = PEsub (PEadd (PEsub (PEpow (PEx 1) 2) (PEmul ( PEc (2#1)) (PEx 1))) (PEc (1#1))) (PEsqr (PEsub (PEx 1) (PEc (1#1))));;
 
+let box_toy4 = [:: [(-1#1),(1#1)]];;
+let pex_toy4 = Pemul (PEmul (PEsub (PEc (1#3)) (PEc (1#3))) (PEx 1)) (PEx 2);;
 
 
 
