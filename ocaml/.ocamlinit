@@ -4,7 +4,7 @@
 #load "printing.cmo";; 
 #load "int.cmo";;
 #load "basicdefs.cmo";; 
-#load "poly.cmo";;
+(*#load "poly.cmo";;
 #load "reification.cmo";;
 #load "taylormodel.cmo";;
 #load "integrals.cmo";;
@@ -12,4 +12,4 @@
 #load "bisection.cmo";;
 #load "taylor.cmo";;
 #load "newton.cmo";;
-#load "str.cma";;
+#load "str.cma";;*)
