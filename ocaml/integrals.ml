@@ -59,7 +59,7 @@ let int_iFun_tm soc iF f n depth a b  =
       aux (depth-1) midpoint b (aux (depth-1) a midpoint res)
   in aux depth a b (thin 0.);;
 
-let int_iFun_tm soc iF f n depth a b  =
+let int_iFun_tm2 soc iF f n depth a b  =
   let rec aux depth maa b res =
     if depth = 0 then
       let i = (makeIntervalle a b) in
@@ -86,7 +86,7 @@ let integralIntBounds_param int_iFun iF f n depth (a,b) (c,d) =
       scd = iMult (thin (abs_float (d -. c))) (convex_hull2 (thin 0.) (iF (c,d))) in
   let res = 
     iPlus sab
-      (iPlus (int_iFun iF f n depth b c) scd) in
+      (iPlus (int_iFun_tm2 string_of_float iF f n depth b c) scd) in
   (* let overestimation = (iMult (iSub (c,d) (a,b)) (iF (a,d))) in *)
   (* assert(subset res overestimation); *) res (* this assertion is false, left as comment to remind everyone *)
 ;;
