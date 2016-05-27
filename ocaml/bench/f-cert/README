@@ -2,7 +2,7 @@ Sorry, I forgot, how to write a makefile. I suggest to run
 
 coqc timing.v n2d6r1.v n2d6r4.v n3d6r1.v n3d6r4.v n4d4r1.v n4d4r3.v n6d2r1.v n6d2r2.v 
 
-Choose on of the examples ex = n2d...
+Choose one of the examples ex = n2d...
 The following script creates the PQ expression.
 
 Require Import timing.
